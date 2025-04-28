@@ -2,7 +2,6 @@
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowUp, TrendingUp, Rocket } from 'lucide-react';
-import statsImage from '/lovable-uploads/6d68748a-eaaa-44e1-9842-d212a0cdaa0a.png';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 const data = [
@@ -112,7 +111,7 @@ const Performance: React.FC = () => {
               <div className="absolute -inset-0.5 bg-gradient-to-br from-tech-purple to-tech-blue rounded-xl blur opacity-30"></div>
               <div className="relative tech-card overflow-hidden">
                 <img 
-                  src={statsImage}
+                  src="/placeholder.svg"
                   alt="Omnia Bot Trading Results" 
                   className="w-full rounded-lg"
                 />
