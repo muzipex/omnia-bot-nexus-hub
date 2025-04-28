@@ -1,7 +1,8 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { Check, Zap } from 'lucide-react';
+import { Check, Zap, Download } from 'lucide-react';
 import { initializePayPalPayment } from '@/lib/paypal';
+import { useDownloadState } from '@/hooks/use-download-state';
 
 const pricingPlans = [
   {
@@ -60,6 +61,8 @@ const pricingPlans = [
 ];
 
 const Pricing: React.FC = () => {
+  const { hasPaid, handleDownload } = useDownloadState();
+
   const handlePurchase = (plan: typeof pricingPlans[0]) => {
     initializePayPalPayment({
       name: plan.name,
@@ -121,6 +124,15 @@ const Pricing: React.FC = () => {
               >
                 {plan.cta}
               </Button>
+              {hasPaid && (
+                <Button 
+                  className="w-full mt-4 bg-tech-blue hover:bg-tech-blue/90 text-white gap-2"
+                  onClick={handleDownload}
+                >
+                  <Download className="w-4 h-4" />
+                  Download Software
+                </Button>
+              )}
             </div>
           ))}
         </div>

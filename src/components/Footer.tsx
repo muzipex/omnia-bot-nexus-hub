@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { Rocket } from "lucide-react";
+import { Rocket, Phone } from "lucide-react";
 
 const Footer: React.FC = () => {
   return (
@@ -61,9 +60,19 @@ const Footer: React.FC = () => {
         </div>
         
         <div className="border-t border-tech-blue/20 mt-12 pt-6 flex flex-col md:flex-row justify-between items-center">
-          <p className="text-gray-400 text-sm">
-            © {new Date().getFullYear()} Omnia BOT. All rights reserved.
-          </p>
+          <div className="text-gray-400 text-sm flex flex-col md:flex-row items-center gap-4">
+            <p>© {new Date().getFullYear()} Omnia BOT. All rights reserved.</p>
+            <p>Created by <span className="text-tech-blue">MUGERWA SIMON PETER</span></p>
+            <a 
+              href="https://wa.me/256750058769" 
+              className="flex items-center gap-2 text-tech-green hover:text-tech-green/80 transition-colors"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Phone className="w-4 h-4" />
+              <span>WhatsApp: +256 750 058769</span>
+            </a>
+          </div>
           <div className="flex items-center space-x-4 mt-4 md:mt-0">
             {['Facebook', 'Twitter', 'LinkedIn', 'YouTube'].map((platform, i) => (
               <a 
