@@ -110,7 +110,7 @@ const Performance: React.FC = () => {
               <div className="absolute -inset-0.5 bg-gradient-to-br from-tech-purple to-tech-blue rounded-xl blur opacity-30"></div>
               <div className="relative tech-card overflow-hidden">
                 <img 
-                  src="/Screenshot 2025-04-28 025035.svg"
+                  src="/Screenshot 2025-04-28 025035.png"
                   alt="Omnia Bot Trading Results" 
                   className="w-full rounded-lg"
                 />

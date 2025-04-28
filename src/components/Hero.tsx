@@ -48,7 +48,7 @@ const Hero: React.FC = () => {
             <div className="absolute -inset-0.5 bg-gradient-to-br from-tech-blue to-tech-green rounded-xl blur opacity-30"></div>
             <div className="relative tech-card overflow-hidden">
               <img 
-                src="/Screenshot 2025-04-28 025035.svg"
+                src="/Screenshot 2025-04-28 025035.png"
                 alt="Omnia Bot Trading Interface" 
                 className="rounded-lg w-full object-contain"
               />
@@ -56,7 +56,7 @@ const Hero: React.FC = () => {
               <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
                 <div>
                   <p className="text-tech-green font-mono">Daily profit:</p>
-                  <p className="text-2xl font-bold glow-text">+$14.85</p>
+                  <p className="text-2xl font-bold glow-text">+$140.85</p>
                 </div>
                 <Button size="sm" className="bg-tech-green/20 hover:bg-tech-green/30 text-tech-green border border-tech-green/50">
                   Live Demo
