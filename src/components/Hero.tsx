@@ -2,7 +2,6 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { ArrowRight, BrainCircuit, Shield } from "lucide-react";
-import heroImage from '/lovable-uploads/be6502e0-2669-4abe-b2d4-fe0a40a81c80.png';
 
 const Hero: React.FC = () => {
   return (
@@ -50,7 +49,7 @@ const Hero: React.FC = () => {
             <div className="absolute -inset-0.5 bg-gradient-to-br from-tech-blue to-tech-green rounded-xl blur opacity-30"></div>
             <div className="relative tech-card overflow-hidden">
               <img 
-                src={heroImage}
+                src="/placeholder.svg"
                 alt="Omnia Bot Trading Interface" 
                 className="rounded-lg w-full object-contain"
               />
