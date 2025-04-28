@@ -1,12 +1,13 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Check, Zap } from 'lucide-react';
+import { initializePayPalPayment } from '@/lib/paypal';
 
 const pricingPlans = [
   {
     name: 'Standard',
-    price: '$299',
+    price: 299,
+    planId: 'standard',
     period: 'one-time payment',
     description: 'Perfect for beginners starting their forex journey.',
     features: [
@@ -21,7 +22,8 @@ const pricingPlans = [
   },
   {
     name: 'Premium',
-    price: '$499',
+    price: 499,
+    planId: 'premium',
     period: 'one-time payment',
     description: 'Our most popular plan for serious traders.',
     features: [
@@ -38,7 +40,8 @@ const pricingPlans = [
   },
   {
     name: 'Ultimate',
-    price: '$899',
+    price: 899,
+    planId: 'ultimate',
     period: 'one-time payment',
     description: 'Maximum flexibility for professional traders.',
     features: [
@@ -57,6 +60,14 @@ const pricingPlans = [
 ];
 
 const Pricing: React.FC = () => {
+  const handlePurchase = (plan: typeof pricingPlans[0]) => {
+    initializePayPalPayment({
+      name: plan.name,
+      price: plan.price,
+      planId: plan.planId
+    });
+  };
+
   return (
     <div id="pricing" className="bg-tech-dark py-24 relative">
       <div className="container mx-auto px-4">
@@ -84,7 +95,7 @@ const Pricing: React.FC = () => {
               
               <h3 className="text-2xl font-bold mb-2 text-white">{plan.name}</h3>
               <div className="mb-4">
-                <span className="text-3xl font-bold text-white">{plan.price}</span>
+                <span className="text-3xl font-bold text-white">${plan.price}</span>
                 <span className="text-gray-400 text-sm"> / {plan.period}</span>
               </div>
               <p className="text-gray-300 mb-6">{plan.description}</p>
@@ -106,6 +117,7 @@ const Pricing: React.FC = () => {
                     ? 'bg-tech-green hover:bg-tech-green/90 text-tech-dark'
                     : 'bg-tech-charcoal border border-tech-blue text-tech-blue hover:bg-tech-blue/10'
                 }`}
+                onClick={() => handlePurchase(plan)}
               >
                 {plan.cta}
               </Button>

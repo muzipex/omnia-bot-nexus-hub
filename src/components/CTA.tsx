@@ -1,9 +1,18 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Shield } from "lucide-react";
+import { initializePayPalPayment } from '@/lib/paypal';
 
 const CTA: React.FC = () => {
+  const handleGetStarted = () => {
+    // Default to Premium plan when clicking Get Started
+    initializePayPalPayment({
+      name: 'Premium',
+      price: 499,
+      planId: 'premium'
+    });
+  };
+
   return (
     <div className="grid-bg noise-effect py-24 relative overflow-hidden">
       <div className="container mx-auto px-4 relative z-10">
@@ -16,7 +25,11 @@ const CTA: React.FC = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="bg-tech-green hover:bg-tech-green/90 text-tech-dark font-bold group gap-2">
+            <Button 
+              size="lg" 
+              className="bg-tech-green hover:bg-tech-green/90 text-tech-dark font-bold group gap-2"
+              onClick={handleGetStarted}
+            >
               Get Started Today
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Button>
