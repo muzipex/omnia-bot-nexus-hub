@@ -56,7 +56,7 @@ const Hero: React.FC = () => {
               <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
                 <div>
                   <p className="text-tech-green font-mono">Daily profit:</p>
-                  <p className="text-2xl font-bold glow-text">+$14.85</p>
+                  <p className="text-2xl font-bold glow-text">+$120.85</p>
                 </div>
                 <Button size="sm" className="bg-tech-green/20 hover:bg-tech-green/30 text-tech-green border border-tech-green/50">
                   Live Demo
