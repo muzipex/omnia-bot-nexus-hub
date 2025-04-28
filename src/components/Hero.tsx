@@ -1,8 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { ArrowRight, BrainCircuit, Shield } from "lucide-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 const Hero: React.FC = () => {
+  const [showVideo, setShowVideo] = useState(false);
+
   return (
     <div className="relative grid-bg noise-effect min-h-screen pt-24 pb-16 overflow-hidden">
       <div className="container mx-auto px-4 relative z-10">
@@ -27,7 +30,12 @@ const Hero: React.FC = () => {
                 Get Started
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Button>
-              <Button size="lg" variant="outline" className="border-tech-blue text-tech-blue hover:bg-tech-blue/10">
+              <Button 
+                size="lg" 
+                variant="outline" 
+                className="border-tech-blue text-tech-blue hover:bg-tech-blue/10"
+                onClick={() => setShowVideo(true)}
+              >
                 Watch Demo
               </Button>
             </div>
@@ -58,7 +66,11 @@ const Hero: React.FC = () => {
                   <p className="text-tech-green font-mono">Daily profit:</p>
                   <p className="text-2xl font-bold glow-text">+$140.85</p>
                 </div>
-                <Button size="sm" className="bg-tech-green/20 hover:bg-tech-green/30 text-tech-green border border-tech-green/50">
+                <Button 
+                  size="sm" 
+                  className="bg-tech-green/20 hover:bg-tech-green/30 text-tech-green border border-tech-green/50"
+                  onClick={() => setShowVideo(true)}
+                >
                   Live Demo
                 </Button>
               </div>
@@ -66,7 +78,20 @@ const Hero: React.FC = () => {
           </div>
         </div>
       </div>
-      
+
+      <Dialog open={showVideo} onOpenChange={setShowVideo}>
+        <DialogContent className="max-w-4xl p-0 overflow-hidden bg-tech-dark border-tech-blue/20">
+          <video 
+            className="w-full aspect-video" 
+            controls 
+            autoPlay
+          >
+            <source src="/Screen Recording 2025-04-28 052115 - Trim.mp4" type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+        </DialogContent>
+      </Dialog>
+
       <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-tech-dark to-transparent"></div>
     </div>
   );

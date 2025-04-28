@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowUp, TrendingUp, Rocket } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 const data = [
   { month: 'Jan', profit: 210 },
@@ -25,6 +27,8 @@ const stats = [
 ];
 
 const Performance: React.FC = () => {
+  const [showVideo, setShowVideo] = useState(false);
+
   return (
     <div id="performance" className="bg-tech-dark py-24 relative">
       <div className="container mx-auto px-4">
@@ -114,6 +118,12 @@ const Performance: React.FC = () => {
                   alt="Omnia Bot Trading Results" 
                   className="w-full rounded-lg"
                 />
+                <Button 
+                  className="absolute bottom-4 right-4 bg-tech-green/20 hover:bg-tech-green/30 text-tech-green border border-tech-green/50"
+                  onClick={() => setShowVideo(true)}
+                >
+                  Live Demo
+                </Button>
               </div>
             </div>
             
@@ -141,6 +151,19 @@ const Performance: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <Dialog open={showVideo} onOpenChange={setShowVideo}>
+        <DialogContent className="max-w-4xl p-0 overflow-hidden bg-tech-dark border-tech-blue/20">
+          <video 
+            className="w-full aspect-video" 
+            controls 
+            autoPlay
+          >
+            <source src="/Screen Recording 2025-04-28 052115 - Trim.mp4" type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
