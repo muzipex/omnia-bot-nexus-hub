@@ -5,7 +5,7 @@ const testimonials = [
   {
     name: 'Alex Morgan',
     role: 'Professional Trader',
-    content: 'Omnia BOT has completely transformed my forex trading. The consistency and precision it offers are unmatched by any other trading system I've used.',
+    content: 'Omnia BOT has completely transformed my forex trading. The consistency and precision it offers are unmatched by any other trading system I\'ve used.',
     rating: 5
   },
   {
@@ -17,7 +17,7 @@ const testimonials = [
   {
     name: 'Michael Torres',
     role: 'Fund Manager',
-    content: 'We've integrated Omnia BOT into our fund's strategy and have seen a significant improvement in our monthly returns with reduced volatility.',
+    content: 'We\'ve integrated Omnia BOT into our fund\'s strategy and have seen a significant improvement in our monthly returns with reduced volatility.',
     rating: 4
   }
 ];
