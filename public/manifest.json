@@ -1,0 +1,16 @@
+{
+  "name": "Omnia BOT - AI-Powered Forex Trading",
+  "short_name": "Omnia BOT",
+  "description": "Advanced AI-powered forex trading robot with automated 24/7 trading and risk management",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0A0C15",
+  "theme_color": "#1EAEDB",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}

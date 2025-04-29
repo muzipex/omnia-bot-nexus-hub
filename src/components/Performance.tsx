@@ -4,6 +4,8 @@ import { ArrowUp, TrendingUp, Rocket } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import LazyImage from './ui/lazy-image';
+import VideoPlayer from './ui/video-player';
 
 const data = [
   { month: 'Jan', profit: 210 },
@@ -113,10 +115,11 @@ const Performance: React.FC = () => {
             <div className="relative">
               <div className="absolute -inset-0.5 bg-gradient-to-br from-tech-purple to-tech-blue rounded-xl blur opacity-30"></div>
               <div className="relative tech-card overflow-hidden">
-                <img 
+                <LazyImage 
                   src="/Screenshot 2025-04-28 025035.png"
-                  alt="Omnia Bot Trading Results" 
+                  alt="Detailed Omnia Bot trading performance metrics and analysis dashboard"
                   className="w-full rounded-lg"
+                  aspectRatio="16/9"
                 />
                 <Button 
                   className="absolute bottom-4 right-4 bg-tech-green/20 hover:bg-tech-green/30 text-tech-green border border-tech-green/50"
@@ -154,14 +157,12 @@ const Performance: React.FC = () => {
 
       <Dialog open={showVideo} onOpenChange={setShowVideo}>
         <DialogContent className="max-w-4xl p-0 overflow-hidden bg-tech-dark border-tech-blue/20">
-          <video 
-            className="w-full aspect-video" 
-            controls 
+          <VideoPlayer 
+            src="/Screen Recording 2025-04-28 052115 - Trim.mp4"
             autoPlay
-          >
-            <source src="/Screen Recording 2025-04-28 052115 - Trim.mp4" type="video/mp4" />
-            Your browser does not support the video tag.
-          </video>
+            controls
+            preload={false}
+          />
         </DialogContent>
       </Dialog>
     </div>

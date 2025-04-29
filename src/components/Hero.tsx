@@ -57,8 +57,11 @@ const Hero: React.FC = () => {
             <div className="relative tech-card overflow-hidden">
               <img 
                 src="/Screenshot 2025-04-28 025035.png"
-                alt="Omnia Bot Trading Interface" 
+                alt="Omnia Bot Trading Interface showing live market analysis and automated trading decisions"
                 className="rounded-lg w-full object-contain"
+                loading="eager" // Hero image should load immediately as it's above the fold
+                width="600"
+                height="400"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-tech-dark via-transparent to-transparent"></div>
               <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
