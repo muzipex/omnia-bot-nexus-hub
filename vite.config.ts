@@ -11,12 +11,14 @@ export default defineConfig({
   plugins: [
     react(),
     compression({
-      algorithm: 'brotli',
-      exclude: [/\.(br|gz)$/, /\.(js|css|html|txt|xml|json|png|jpg|jpeg|gif|svg|woff|woff2|eot|ttf|otf|ico|mp4)$/],
+      algorithm: 'brotliCompress',
+      exclude: [/\.(br|gz)$/i],
+      deleteOriginalAssets: false,
     }),
     compression({
       algorithm: 'gzip',
-      exclude: [/\.(br|gz)$/, /\.(js|css|html|txt|xml|json|png|jpg|jpeg|gif|svg|woff|woff2|eot|ttf|otf|ico|mp4)$/],
+      exclude: [/\.(br|gz)$/i],
+      deleteOriginalAssets: false,
     }),
   ],
   resolve: {
