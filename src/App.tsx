@@ -12,6 +12,7 @@ import { useVisitorTracking } from "@/hooks/use-visitor-tracking";
 const Index = React.lazy(() => import("./pages/Index"));
 const Success = React.lazy(() => import("./pages/Success"));
 const NotFound = React.lazy(() => import("./pages/NotFound"));
+const Models = React.lazy(() => import("./pages/Models"));
 const Admin = React.lazy(() => import("./pages/Admin"));
 const AdminDashboard = React.lazy(() => import("./pages/admin/Dashboard"));
 
@@ -44,6 +45,7 @@ const AppContent = () => {
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/success" element={<Success />} />
+        <Route path="/models" element={<Models />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="/admin/dashboard" element={
           <ProtectedRoute>

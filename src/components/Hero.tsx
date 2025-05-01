@@ -1,17 +1,29 @@
+
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { ArrowRight, BrainCircuit, Shield } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import MatrixCandleStickBackground from './MatrixCandleStickBackground';
 
 const Hero: React.FC = () => {
   const [showVideo, setShowVideo] = useState(false);
+  const navigate = useNavigate();
+
+  const handleGetStarted = () => {
+    navigate('/models');
+  };
 
   return (
     <div className="relative grid-bg noise-effect min-h-screen pt-24 pb-16 overflow-hidden">
+      <div className="absolute inset-0 z-0">
+        <MatrixCandleStickBackground />
+      </div>
+      
       <div className="container mx-auto px-4 relative z-10">
         <div className="flex flex-col md:flex-row items-center gap-8">
           <div className="flex-1 space-y-6">
-            <div className="inline-block px-3 py-1 rounded-full bg-tech-charcoal border border-tech-blue/30 text-sm font-medium text-tech-blue">
+            <div className="inline-block px-3 py-1 rounded-full bg-tech-charcoal border border-tech-blue/30 text-sm font-medium text-tech-blue backdrop-blur-sm">
               Algorithmic Forex Trading
             </div>
             
@@ -26,7 +38,11 @@ const Hero: React.FC = () => {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button size="lg" className="bg-tech-green hover:bg-tech-green/90 text-tech-dark font-bold group gap-2">
+              <Button 
+                size="lg" 
+                className="bg-tech-green hover:bg-tech-green/90 text-tech-dark font-bold group gap-2"
+                onClick={handleGetStarted}
+              >
                 Get Started
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Button>
@@ -54,7 +70,7 @@ const Hero: React.FC = () => {
           
           <div className="flex-1 relative">
             <div className="absolute -inset-0.5 bg-gradient-to-br from-tech-blue to-tech-green rounded-xl blur opacity-30"></div>
-            <div className="relative tech-card overflow-hidden">
+            <div className="relative tech-card overflow-hidden backdrop-blur-sm">
               <img 
                 src="/Screenshot 2025-04-28 025035.png"
                 alt="Omnia Bot Trading Interface showing live market analysis and automated trading decisions"
@@ -95,7 +111,7 @@ const Hero: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-tech-dark to-transparent"></div>
+      <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-tech-dark to-transparent z-10"></div>
     </div>
   );
 };

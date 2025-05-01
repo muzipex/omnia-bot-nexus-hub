@@ -109,6 +109,15 @@ const Navbar: React.FC = () => {
             </ul>
           </nav>
         </div>
+        
+        {/* Add this somewhere in the existing JSX, perhaps near the other nav items */}
+        <a 
+          href="/admin" 
+          className="text-tech-blue/50 hover:text-tech-blue transition-colors p-1" 
+          title="Admin Portal"
+        >
+          Admin
+        </a>
       </div>
     </nav>
   );
