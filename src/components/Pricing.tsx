@@ -27,37 +27,18 @@ const pricingPlans = [
     price: 499,
     planId: 'premium',
     period: 'one-time payment',
-    description: 'Our most popular plan for serious traders.',
+    description: 'Advanced features for serious traders.',
     features: [
-      'Dual account license',
+      'Multi-account license',
       'Access to all currency pairs',
-      'Advanced risk parameters',
-      'Priority email support',
-      'Free updates for 12 months',
-      'Performance analytics dashboard',
-      'Custom strategy configuration'
+      'Advanced risk management',
+      'Priority support',
+      'Free lifetime updates',
+      'Custom indicators',
+      'Performance analytics'
     ],
     isPopular: true,
-    cta: 'Buy Premium'
-  },
-  {
-    name: 'Ultimate',
-    price: 899,
-    planId: 'ultimate',
-    period: 'one-time payment',
-    description: 'Maximum flexibility for professional traders.',
-    features: [
-      'Five account license',
-      'Access to all currency pairs',
-      'Advanced risk parameters',
-      '24/7 priority support',
-      'Lifetime free updates',
-      'Performance analytics dashboard',
-      'Custom strategy configuration',
-      'VIP trading signals'
-    ],
-    isPopular: false,
-    cta: 'Go Ultimate'
+    cta: 'Get Premium'
   }
 ];
 
@@ -92,91 +73,74 @@ const Pricing: React.FC = () => {
             "aggregateRating": {
               "@type": "AggregateRating",
               "ratingValue": "4.8",
-              "ratingCount": "1500",
-              "reviewCount": "1500"
-            },
-            "review": [
-              {
-                "@type": "Review",
-                "reviewRating": {
-                  "@type": "Rating",
-                  "ratingValue": "5"
-                },
-                "author": {
-                  "@type": "Person",
-                  "name": "John Smith"
-                },
-                "reviewBody": "The AI-powered trading algorithms have completely transformed my trading experience. Highly recommended!"
-              },
-              {
-                "@type": "Review",
-                "reviewRating": {
-                  "@type": "Rating",
-                  "ratingValue": "5"
-                },
-                "author": {
-                  "@type": "Person",
-                  "name": "Sarah Johnson"
-                },
-                "reviewBody": "Exceptional performance and reliable automation. Worth every penny!"
-              }
-            ]
+              "ratingCount": "1500"
+            }
           })}
         </script>
       </Helmet>
 
-      <div id="pricing" className="bg-tech-dark py-24 relative">
+      <div className="relative py-24 overflow-hidden" id="pricing">
         <div className="container mx-auto px-4">
-          <div className="text-center max-w-3xl mx-auto mb-16">
+          <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              <span className="purple-glow-text">Invest</span> in Your <span className="glow-text">Success</span>
+              <span className="text-gradient">Simple</span> Pricing,{" "}
+              <span className="text-gradient">Powerful</span> Features
             </h2>
-            <p className="text-gray-300 text-lg">
-              Choose the perfect plan that aligns with your trading goals and preferences.
+            <p className="text-gray-300 text-lg max-w-2xl mx-auto">
+              Choose the plan that best fits your trading needs. All plans include our core AI-powered trading technology.
             </p>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {pricingPlans.map((plan, index) => (
+
+          <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+            {pricingPlans.map((plan) => (
               <div 
-                key={index} 
-                className={`tech-card relative ${plan.isPopular ? 'border-tech-green glow-border' : 'hover:border-tech-blue/40'} transition-all duration-300`}
+                key={plan.name}
+                className={`relative tech-card p-6 ${
+                  plan.isPopular ? 'border-2 border-tech-green' : ''
+                }`}
               >
                 {plan.isPopular && (
-                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 px-4 py-1 bg-tech-green text-tech-dark text-sm font-bold rounded-full flex items-center gap-1">
-                    <Zap className="w-4 h-4" />
-                    Most Popular
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                    <span className="bg-tech-green text-tech-dark text-sm font-bold px-3 py-1 rounded-full flex items-center gap-1">
+                      <Zap className="w-4 h-4" />
+                      Most Popular
+                    </span>
                   </div>
                 )}
-                
-                <h3 className="text-2xl font-bold mb-2 text-white">{plan.name}</h3>
-                <div className="mb-4">
-                  <span className="text-3xl font-bold text-white">${plan.price}</span>
-                  <span className="text-gray-400 text-sm"> / {plan.period}</span>
+
+                <div className="text-center mb-6">
+                  <h3 className="text-xl font-bold text-white mb-2">{plan.name}</h3>
+                  <div className="text-3xl font-bold text-tech-blue mb-2">
+                    ${plan.price}
+                  </div>
+                  <p className="text-gray-400 text-sm">{plan.period}</p>
                 </div>
-                <p className="text-gray-300 mb-6">{plan.description}</p>
-                
-                <div className="space-y-3 mb-8">
-                  {plan.features.map((feature, i) => (
-                    <div key={i} className="flex items-start gap-2">
-                      <div className="min-w-4 h-4 rounded-full bg-tech-green/20 flex items-center justify-center mt-1">
-                        <Check className="w-3 h-3 text-tech-green" />
-                      </div>
-                      <span className="text-gray-300">{feature}</span>
-                    </div>
-                  ))}
+
+                <div className="space-y-4 mb-6">
+                  <p className="text-gray-300">{plan.description}</p>
+                  <ul className="space-y-3">
+                    {plan.features.map((feature, index) => (
+                      <li key={index} className="flex items-center text-gray-300">
+                        <Check className="w-5 h-5 text-tech-green mr-2 flex-shrink-0" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="space-y-3">
+                  <Button 
+                    className={`w-full ${
+                      plan.isPopular
+                        ? 'bg-tech-green hover:bg-tech-green/90 text-tech-dark'
+                        : 'bg-tech-charcoal border border-tech-blue text-tech-blue hover:bg-tech-blue/10'
+                    }`}
+                    onClick={() => handlePurchase(plan)}
+                  >
+                    {plan.cta} with PayPal
+                  </Button>
                 </div>
                 
-                <Button 
-                  className={`w-full ${
-                    plan.isPopular
-                      ? 'bg-tech-green hover:bg-tech-green/90 text-tech-dark'
-                      : 'bg-tech-charcoal border border-tech-blue text-tech-blue hover:bg-tech-blue/10'
-                  }`}
-                  onClick={() => handlePurchase(plan)}
-                >
-                  {plan.cta}
-                </Button>
                 {hasPaid && (
                   <Button 
                     className="w-full mt-4 bg-tech-blue hover:bg-tech-blue/90 text-white gap-2"
@@ -189,7 +153,7 @@ const Pricing: React.FC = () => {
               </div>
             ))}
           </div>
-          
+
           <div className="mt-12 text-center max-w-xl mx-auto">
             <p className="text-gray-400 text-sm">
               All plans include a 30-day money-back guarantee. If you're not satisfied with the performance of Omnia BOT, we'll refund your purchase.
