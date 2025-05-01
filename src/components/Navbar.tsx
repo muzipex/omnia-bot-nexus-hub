@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { ShieldCheck, Rocket, Menu, X } from "lucide-react";
 import { scrollToSection } from "@/lib/utils";
@@ -110,14 +111,13 @@ const Navbar: React.FC = () => {
           </nav>
         </div>
         
-        {/* Add this somewhere in the existing JSX, perhaps near the other nav items */}
-        <a 
-          href="/admin" 
+        <Link 
+          to="/admin" 
           className="text-tech-blue/50 hover:text-tech-blue transition-colors p-1" 
           title="Admin Portal"
         >
           Admin
-        </a>
+        </Link>
       </div>
     </nav>
   );

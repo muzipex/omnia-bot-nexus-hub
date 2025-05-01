@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '@/hooks/use-admin-auth';
@@ -291,16 +290,18 @@ const Admin: React.FC = () => {
 
   useEffect(() => {
     // Record site visit for analytics
-    const currentVisits = JSON.parse(localStorage.getItem('site_visits') || '[]');
-    const newVisit = {
-      id: `visit-${Date.now()}`,
-      timestamp: Date.now(),
-      page: '/admin',
-      referrer: document.referrer || null
-    };
-    
-    localStorage.setItem('site_visits', JSON.stringify([...currentVisits, newVisit]));
-  }, []);
+    if (admin.isAuthenticated) {
+      const currentVisits = JSON.parse(localStorage.getItem('site_visits') || '[]');
+      const newVisit = {
+        id: `visit-${Date.now()}`,
+        timestamp: Date.now(),
+        page: '/admin',
+        referrer: document.referrer || null
+      };
+      
+      localStorage.setItem('site_visits', JSON.stringify([...currentVisits, newVisit]));
+    }
+  }, [admin.isAuthenticated]);
 
   return (
     <>
