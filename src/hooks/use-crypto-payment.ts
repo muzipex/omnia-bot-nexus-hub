@@ -1,49 +1,46 @@
 
-import { useState, useEffect } from 'react';
-import { verifyUSDTTransaction } from '@/lib/crypto-payment';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { toast } from "@/components/ui/sonner";
+import { useNavigate } from 'react-router-dom';
 
-export const useCryptoPayment = (txId?: string) => {
-  const [verifying, setVerifying] = useState(false);
-  const [verified, setVerified] = useState(false);
+export const useCryptoPayment = () => {
+  const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
 
-  // Verify transaction
-  const checkTransaction = async (transactionId: string) => {
-    if (verifying) return;
+  const submitTransaction = async (transactionId: string) => {
+    if (submitting) return;
     
-    setVerifying(true);
-    toast.loading("Verifying payment...");
+    setSubmitting(true);
+    toast.loading("Submitting transaction for verification...");
     
     try {
-      const success = await verifyUSDTTransaction(transactionId);
-      setVerified(success);
+      // Store the transaction in localStorage for admin verification
+      const pendingTransactions = JSON.parse(localStorage.getItem('pending_crypto_transactions') || '[]');
       
-      if (success) {
-        toast.success("Payment verified successfully!");
-        navigate('/success?payment_success=true&tx_method=usdt');
-      } else {
-        toast.error("Payment verification failed. Please try again later.");
+      // Check if this transaction is already submitted
+      const existingTx = pendingTransactions.find((tx: any) => tx.txId === transactionId);
+      
+      if (!existingTx) {
+        toast.error("Transaction not found. Please try again.");
+        setSubmitting(false);
+        return;
       }
+      
+      // Update the transaction status to pending admin verification
+      toast.success("Transaction submitted for admin verification!");
+      
+      // Navigate to a thank you page
+      navigate('/success?payment_pending=true&tx_method=usdt');
     } catch (error) {
-      console.error("Transaction verification error:", error);
-      toast.error("Error verifying payment");
+      console.error("Transaction submission error:", error);
+      toast.error("Error submitting transaction");
     } finally {
-      setVerifying(false);
+      setSubmitting(false);
     }
   };
 
-  // Check for pending transactions on component mount
-  useEffect(() => {
-    if (txId) {
-      checkTransaction(txId);
-    }
-  }, [txId]);
-
   return {
-    verifying,
-    verified,
-    checkTransaction
+    submitting,
+    submitTransaction
   };
 };

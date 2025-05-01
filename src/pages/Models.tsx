@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -94,7 +93,7 @@ const Models: React.FC = () => {
   const [cryptoTxId, setCryptoTxId] = useState<string | undefined>();
   const navigate = useNavigate();
   const { hasPaid, handleDownload } = useDownloadState();
-  const { verifying, checkTransaction } = useCryptoPayment(cryptoTxId);
+  const { submitting, submitTransaction } = useCryptoPayment();
   
   const pricingPlans = [
     {
@@ -147,9 +146,10 @@ const Models: React.FC = () => {
       .catch(() => toast.error("Failed to copy address"));
   };
 
-  const handleVerifyPayment = () => {
+  const handleSubmitTransaction = () => {
     if (cryptoTxId) {
-      checkTransaction(cryptoTxId);
+      submitTransaction(cryptoTxId);
+      setShowCryptoDialog(false);
     }
   };
 
@@ -373,18 +373,18 @@ const Models: React.FC = () => {
             
             <div className="bg-tech-blue/10 p-4 rounded-lg">
               <p className="text-sm text-gray-300">
-                <span className="text-tech-blue font-bold">Important:</span> Please send only USDT on the Binance Smart Chain (BEP20) network. Sending other tokens or using the wrong network may result in permanent loss of funds.
+                <span className="text-tech-blue font-bold">Important:</span> Please send only USDT on the Binance Smart Chain (BEP20) network. After sending, click the button below to submit your transaction for manual verification by an admin.
               </p>
             </div>
           </div>
           
           <DialogFooter>
             <Button 
-              onClick={handleVerifyPayment} 
+              onClick={handleSubmitTransaction} 
               className="w-full bg-tech-green text-tech-dark font-bold"
-              disabled={verifying}
+              disabled={submitting}
             >
-              {verifying ? "Verifying..." : "Verify Payment"}
+              {submitting ? "Submitting..." : "I've Sent the Payment"}
             </Button>
           </DialogFooter>
         </DialogContent>
