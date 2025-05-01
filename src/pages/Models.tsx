@@ -14,6 +14,7 @@ import { useCryptoPayment } from '@/hooks/use-crypto-payment';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "@/components/ui/sonner";
 import { Copy } from "lucide-react";
+import { usePaymentVerification } from '@/hooks/use-payment-verification';
 
 const robotModels = [
   {
@@ -94,6 +95,7 @@ const Models: React.FC = () => {
   const navigate = useNavigate();
   const { hasPaid, handleDownload } = useDownloadState();
   const { submitting, submitTransaction } = useCryptoPayment();
+  const { isVerified, isLoading } = usePaymentVerification(cryptoTxId);
   
   const pricingPlans = [
     {
@@ -298,14 +300,15 @@ const Models: React.FC = () => {
                   Proceed to Payment
                 </Button>
                 
-                {hasPaid && (
+                {(isVerified || hasPaid) && (
                   <div className="mt-6 text-center">
                     <Button 
                       className="bg-tech-blue hover:bg-tech-blue/90 text-white gap-2"
                       onClick={handleDownload}
+                      disabled={isLoading}
                     >
                       <Download className="w-4 h-4" />
-                      Download Software
+                      {isLoading ? "Verifying Payment..." : "Download Software"}
                     </Button>
                   </div>
                 )}
