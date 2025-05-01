@@ -1,3 +1,4 @@
+
 import React, { Suspense, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -11,6 +12,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 const Index = React.lazy(() => import("./pages/Index"));
 const Success = React.lazy(() => import("./pages/Success"));
 const NotFound = React.lazy(() => import("./pages/NotFound"));
+const Models = React.lazy(() => import("./pages/Models"));
 
 // Loading fallback
 const LoadingFallback = () => (
@@ -45,6 +47,7 @@ const App = () => {
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/success" element={<Success />} />
+                <Route path="/models" element={<Models />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
