@@ -24,8 +24,8 @@ const MatrixCandleStickBackground: React.FC = () => {
     window.addEventListener('resize', resizeCanvas);
     
     // Candlestick parameters
-    const candleWidth = 3;
-    const gap = 8;
+    const candleWidth = 4;
+    const gap = 10;
     const columns = Math.ceil(canvas.width / (candleWidth + gap));
     const candlesticks: {
       x: number;
@@ -35,6 +35,11 @@ const MatrixCandleStickBackground: React.FC = () => {
       speed: number;
       opacity: number;
       color: string;
+      wickHeight: number;
+      pulsating: boolean;
+      pulseSpeed: number;
+      pulseDirection: boolean;
+      pulseOpacity: number;
     }[] = [];
     
     // Initialize candlesticks
@@ -53,8 +58,13 @@ const MatrixCandleStickBackground: React.FC = () => {
         height: 5 + Math.random() * 15,
         isUp,
         speed: 0.5 + Math.random() * 1.5,
-        opacity: 0.1 + Math.random() * 0.3,
-        color
+        opacity: 0.1 + Math.random() * 0.4,
+        color,
+        wickHeight: 8 + Math.random() * 20,
+        pulsating: Math.random() > 0.7, // 30% of candlesticks will pulsate
+        pulseSpeed: 0.01 + Math.random() * 0.03,
+        pulseDirection: true, // true = increasing opacity
+        pulseOpacity: 0.1 + Math.random() * 0.3
       });
     }
     
@@ -69,28 +79,47 @@ const MatrixCandleStickBackground: React.FC = () => {
         // Update position
         candle.y += candle.speed;
         
+        // Handle pulsating effect
+        if (candle.pulsating) {
+          if (candle.pulseDirection) {
+            candle.pulseOpacity += candle.pulseSpeed;
+            if (candle.pulseOpacity >= 0.8) candle.pulseDirection = false;
+          } else {
+            candle.pulseOpacity -= candle.pulseSpeed;
+            if (candle.pulseOpacity <= 0.2) candle.pulseDirection = true;
+          }
+        }
+        
         // Reset position when it goes off screen
         if (candle.y > canvas.height) {
-          candle.y = 0;
+          candle.y = -20 - Math.random() * 50; // Start above the screen with some variance
           candle.isUp = Math.random() > 0.5;
           candle.height = 5 + Math.random() * 15;
-          candle.speed = 0.5 + Math.random() * 1.5;
+          candle.speed = 0.5 + Math.random() * 2;
+          candle.wickHeight = 8 + Math.random() * 20;
+          // Occasionally change color on reset
+          if (Math.random() > 0.7) {
+            candle.color = Math.random() > 0.6 
+              ? '#00FF41' 
+              : Math.random() > 0.5 
+                ? '#1EAEDB' 
+                : '#8B5CF6';
+          }
         }
         
         // Draw candlestick
         ctx.fillStyle = candle.color;
-        ctx.globalAlpha = candle.opacity;
+        ctx.globalAlpha = candle.pulsating ? candle.pulseOpacity : candle.opacity;
         
         // Draw candlestick body
         ctx.fillRect(candle.x, candle.y, candleWidth, candle.height);
         
         // Draw wick
-        const wickHeight = candle.height * 0.6;
         ctx.fillRect(
           candle.x + candleWidth / 2 - 0.5, 
-          candle.isUp ? candle.y - wickHeight : candle.y + candle.height, 
+          candle.isUp ? candle.y - candle.wickHeight : candle.y + candle.height, 
           1, 
-          wickHeight
+          candle.wickHeight
         );
         
         // Draw horizontal price lines occasionally
@@ -99,9 +128,46 @@ const MatrixCandleStickBackground: React.FC = () => {
           ctx.fillRect(
             candle.x - gap, 
             candle.y + (candle.isUp ? 0 : candle.height), 
-            candleWidth + gap * 2, 
+            candleWidth + gap * 3, 
             1
           );
+        }
+        
+        // Occasionally draw a glowing "data point"
+        if (Math.random() < 0.001) {
+          ctx.globalAlpha = 0.7;
+          ctx.beginPath();
+          ctx.arc(
+            candle.x + candleWidth / 2,
+            candle.y + candle.height / 2,
+            2,
+            0,
+            Math.PI * 2
+          );
+          ctx.fill();
+          
+          // Add a glow effect
+          const gradient = ctx.createRadialGradient(
+            candle.x + candleWidth / 2,
+            candle.y + candle.height / 2,
+            0,
+            candle.x + candleWidth / 2,
+            candle.y + candle.height / 2,
+            8
+          );
+          gradient.addColorStop(0, candle.color);
+          gradient.addColorStop(1, 'transparent');
+          ctx.fillStyle = gradient;
+          ctx.globalAlpha = 0.4;
+          ctx.beginPath();
+          ctx.arc(
+            candle.x + candleWidth / 2,
+            candle.y + candle.height / 2,
+            8,
+            0,
+            Math.PI * 2
+          );
+          ctx.fill();
         }
       });
       
@@ -121,7 +187,7 @@ const MatrixCandleStickBackground: React.FC = () => {
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 z-0 opacity-60"
+      className="fixed inset-0 z-0 opacity-70"
       aria-hidden="true"
     />
   );

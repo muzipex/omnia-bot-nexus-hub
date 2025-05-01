@@ -7,7 +7,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { reportWebVitals, preloadComponents } from "@/lib/utils";
 import ErrorBoundary from "@/components/ErrorBoundary";
-import MatrixCandleStickBackground from "./components/MatrixCandleStickBackground";
 
 // Lazy load pages
 const Index = React.lazy(() => import("./pages/Index"));
@@ -45,7 +44,6 @@ const App = () => {
           <Sonner />
           <BrowserRouter>
             <Suspense fallback={<LoadingFallback />}>
-              <MatrixCandleStickBackground />
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/success" element={<Success />} />
