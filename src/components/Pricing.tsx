@@ -1,9 +1,14 @@
-import React from 'react';
+
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Check, Zap, Download } from 'lucide-react';
+import { Check, Zap, Download, Copy, Bitcoin } from 'lucide-react';
 import { initializePayPalPayment } from '@/lib/paypal';
 import { useDownloadState } from '@/hooks/use-download-state';
 import { Helmet } from 'react-helmet';
+import { USDT_ADDRESS, initializeUSDTPayment } from '@/lib/crypto-payment';
+import { useCryptoPayment } from '@/hooks/use-crypto-payment';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { toast } from "@/components/ui/sonner";
 
 const pricingPlans = [
   {
@@ -63,6 +68,10 @@ const pricingPlans = [
 
 const Pricing: React.FC = () => {
   const { hasPaid, handleDownload } = useDownloadState();
+  const [showCryptoDialog, setShowCryptoDialog] = useState(false);
+  const [currentPlan, setCurrentPlan] = useState<typeof pricingPlans[0] | null>(null);
+  const [cryptoTxId, setCryptoTxId] = useState<string | undefined>();
+  const { verifying, checkTransaction } = useCryptoPayment(cryptoTxId);
 
   const handlePurchase = (plan: typeof pricingPlans[0]) => {
     initializePayPalPayment({
@@ -70,6 +79,32 @@ const Pricing: React.FC = () => {
       price: plan.price,
       planId: plan.planId
     });
+  };
+
+  const handleCryptoPurchase = (plan: typeof pricingPlans[0]) => {
+    setCurrentPlan(plan);
+    setShowCryptoDialog(true);
+    
+    // Initialize crypto payment
+    const result = initializeUSDTPayment({
+      name: plan.name,
+      price: plan.price,
+      planId: plan.planId
+    });
+    
+    setCryptoTxId(result.txId);
+  };
+
+  const handleCopyAddress = () => {
+    navigator.clipboard.writeText(USDT_ADDRESS)
+      .then(() => toast.success("Address copied to clipboard"))
+      .catch(() => toast.error("Failed to copy address"));
+  };
+
+  const handleVerifyPayment = () => {
+    if (cryptoTxId) {
+      checkTransaction(cryptoTxId);
+    }
   };
 
   return (
@@ -167,16 +202,27 @@ const Pricing: React.FC = () => {
                   ))}
                 </div>
                 
-                <Button 
-                  className={`w-full ${
-                    plan.isPopular
-                      ? 'bg-tech-green hover:bg-tech-green/90 text-tech-dark'
-                      : 'bg-tech-charcoal border border-tech-blue text-tech-blue hover:bg-tech-blue/10'
-                  }`}
-                  onClick={() => handlePurchase(plan)}
-                >
-                  {plan.cta}
-                </Button>
+                <div className="space-y-3">
+                  <Button 
+                    className={`w-full ${
+                      plan.isPopular
+                        ? 'bg-tech-green hover:bg-tech-green/90 text-tech-dark'
+                        : 'bg-tech-charcoal border border-tech-blue text-tech-blue hover:bg-tech-blue/10'
+                    }`}
+                    onClick={() => handlePurchase(plan)}
+                  >
+                    {plan.cta} with PayPal
+                  </Button>
+                  
+                  <Button 
+                    className="w-full bg-tech-purple hover:bg-tech-purple/90 text-white gap-2"
+                    onClick={() => handleCryptoPurchase(plan)}
+                  >
+                    <Bitcoin className="w-4 h-4" />
+                    Pay with USDT
+                  </Button>
+                </div>
+                
                 {hasPaid && (
                   <Button 
                     className="w-full mt-4 bg-tech-blue hover:bg-tech-blue/90 text-white gap-2"
@@ -199,6 +245,52 @@ const Pricing: React.FC = () => {
         
         <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-tech-blue/50 to-transparent"></div>
       </div>
+
+      {/* Crypto Payment Dialog */}
+      <Dialog open={showCryptoDialog} onOpenChange={setShowCryptoDialog}>
+        <DialogContent className="bg-tech-dark border-tech-blue/30">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-center">
+              Pay with USDT (Tether)
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="text-center">
+              <p className="text-gray-300">Send <span className="text-tech-green font-bold">
+                ${currentPlan?.price} USDT
+              </span> to the following address:</p>
+            </div>
+            
+            <div className="bg-tech-charcoal p-4 rounded-lg border border-tech-blue/30">
+              <div className="flex items-center space-x-2">
+                <div className="break-all text-sm text-gray-300 font-mono">
+                  {USDT_ADDRESS}
+                </div>
+                <Button variant="outline" size="sm" onClick={handleCopyAddress} className="shrink-0">
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            
+            <div className="bg-tech-blue/10 p-4 rounded-lg">
+              <p className="text-sm text-gray-300">
+                <span className="text-tech-blue font-bold">Important:</span> Please send only USDT on the Binance Smart Chain (BEP20) network. Sending other tokens or using the wrong network may result in permanent loss of funds.
+              </p>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              onClick={handleVerifyPayment} 
+              className="w-full bg-tech-green text-tech-dark font-bold"
+              disabled={verifying}
+            >
+              {verifying ? "Verifying..." : "Verify Payment"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Check, Download, CreditCard, ArrowRight } from "lucide-react";
+import { Check, Download, CreditCard, ArrowRight, Bitcoin } from "lucide-react";
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
@@ -10,6 +10,11 @@ import { useDownloadState } from '@/hooks/use-download-state';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { flutterwavePayment } from '@/lib/flutterwave';
 import { initializePayPalPayment } from '@/lib/paypal';
+import { initializeUSDTPayment, USDT_ADDRESS } from '@/lib/crypto-payment';
+import { useCryptoPayment } from '@/hooks/use-crypto-payment';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { toast } from "@/components/ui/sonner";
+import { Copy } from "lucide-react";
 
 const robotModels = [
   {
@@ -85,8 +90,11 @@ const setupSteps = [
 const Models: React.FC = () => {
   const [selectedPlan, setSelectedPlan] = useState('premium');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('paypal');
+  const [showCryptoDialog, setShowCryptoDialog] = useState(false);
+  const [cryptoTxId, setCryptoTxId] = useState<string | undefined>();
   const navigate = useNavigate();
   const { hasPaid, handleDownload } = useDownloadState();
+  const { verifying, checkTransaction } = useCryptoPayment(cryptoTxId);
   
   const pricingPlans = [
     {
@@ -122,6 +130,26 @@ const Models: React.FC = () => {
         price: plan.price,
         planId: plan.planId
       });
+    } else if (selectedPaymentMethod === 'crypto') {
+      const result = initializeUSDTPayment({
+        name: plan.name,
+        price: plan.price,
+        planId: plan.planId
+      });
+      setCryptoTxId(result.txId);
+      setShowCryptoDialog(true);
+    }
+  };
+
+  const handleCopyAddress = () => {
+    navigator.clipboard.writeText(USDT_ADDRESS)
+      .then(() => toast.success("Address copied to clipboard"))
+      .catch(() => toast.error("Failed to copy address"));
+  };
+
+  const handleVerifyPayment = () => {
+    if (cryptoTxId) {
+      checkTransaction(cryptoTxId);
     }
   };
 
@@ -251,6 +279,14 @@ const Models: React.FC = () => {
                     >
                       Flutterwave
                     </Button>
+                    <Button
+                      variant={selectedPaymentMethod === 'crypto' ? 'default' : 'outline'}
+                      className={selectedPaymentMethod === 'crypto' ? 'bg-tech-green' : 'border-tech-green/40'}
+                      onClick={() => setSelectedPaymentMethod('crypto')}
+                    >
+                      <Bitcoin className="mr-2 h-4 w-4" />
+                      USDT (Crypto)
+                    </Button>
                   </div>
                 </div>
                 
@@ -307,6 +343,52 @@ const Models: React.FC = () => {
         
         <Footer />
       </div>
+
+      {/* Crypto Payment Dialog */}
+      <Dialog open={showCryptoDialog} onOpenChange={setShowCryptoDialog}>
+        <DialogContent className="bg-tech-dark border-tech-blue/30">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-center">
+              Pay with USDT (Tether)
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="text-center">
+              <p className="text-gray-300">Send <span className="text-tech-green font-bold">
+                ${pricingPlans.find(p => p.planId === selectedPlan)?.price} USDT
+              </span> to the following address:</p>
+            </div>
+            
+            <div className="bg-tech-charcoal p-4 rounded-lg border border-tech-blue/30">
+              <div className="flex items-center space-x-2">
+                <div className="break-all text-sm text-gray-300 font-mono">
+                  {USDT_ADDRESS}
+                </div>
+                <Button variant="outline" size="sm" onClick={handleCopyAddress} className="shrink-0">
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            
+            <div className="bg-tech-blue/10 p-4 rounded-lg">
+              <p className="text-sm text-gray-300">
+                <span className="text-tech-blue font-bold">Important:</span> Please send only USDT on the Binance Smart Chain (BEP20) network. Sending other tokens or using the wrong network may result in permanent loss of funds.
+              </p>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              onClick={handleVerifyPayment} 
+              className="w-full bg-tech-green text-tech-dark font-bold"
+              disabled={verifying}
+            >
+              {verifying ? "Verifying..." : "Verify Payment"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
