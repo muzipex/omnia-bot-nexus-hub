@@ -28,11 +28,21 @@ export function reportWebVitals(): void {
     try {
       const entries = performance.getEntriesByType('navigation');
       if (entries.length > 0 && 'loadEventEnd' in entries[0]) {
-        const loadTime = entries[0].loadEventEnd;
+        const loadTime = (entries[0] as any).loadEventEnd;
         console.log(`Page loaded in: ${loadTime.toFixed(2)}ms`);
       }
     } catch (error) {
       console.error('Error reporting web vitals:', error);
+    }
+  }
+}
+
+// Add scrollToSection function
+export function scrollToSection(sectionId: string): void {
+  if (isClient) {
+    const section = document.getElementById(sectionId);
+    if (section) {
+      section.scrollIntoView({ behavior: 'smooth' });
     }
   }
 }
