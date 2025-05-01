@@ -1,29 +1,25 @@
+
 import React, { useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Download, CheckCircle, Clock } from 'lucide-react';
 import { useDownloadState } from '@/hooks/use-download-state';
 import SEO from '../components/SEO';
 import Breadcrumbs from '../components/Breadcrumbs';
-import { useNavigate } from 'react-router-dom';
 
 const Success: React.FC = () => {
   const { hasPaid, handleDownload } = useDownloadState();
   const urlParams = new URLSearchParams(window.location.search);
-  const paymentSuccess = urlParams.get('payment_success') === 'true';
-  const navigate = useNavigate();
+  const paymentPending = urlParams.get('payment_pending') === 'true';
 
   useEffect(() => {
-    if (!paymentSuccess) {
-      navigate('/');
-    }
     console.log('Purchase conversion completed');
-  }, [paymentSuccess, navigate]);
+  }, []);
 
   return (
     <>
       <SEO 
-        title={!hasPaid ? "Payment Pending" : "Purchase Successful"}
-        description={!hasPaid 
+        title={paymentPending ? "Payment Pending" : "Purchase Successful"}
+        description={paymentPending 
           ? "Your payment is being verified. We'll process your order soon." 
           : "Thank you for your purchase. Download Omnia BOT and start your trading journey."
         }
@@ -34,7 +30,7 @@ const Success: React.FC = () => {
       <div className="min-h-screen bg-tech-dark grid place-items-center p-4">
         <Breadcrumbs className="absolute top-4 left-4 text-sm" />
         <div className="max-w-md w-full tech-card text-center space-y-6" role="main">
-          {!hasPaid ? (
+          {paymentPending ? (
             <>
               <div className="mx-auto w-16 h-16 rounded-full bg-yellow-500/20 flex items-center justify-center">
                 <Clock className="w-8 h-8 text-yellow-500" aria-hidden="true" />
@@ -44,7 +40,7 @@ const Success: React.FC = () => {
               
               <div className="space-y-4">
                 <p className="text-gray-300">
-                  Thank you for your purchase! Our admin team will verify your payment shortly.
+                  Thank you for your purchase. Your payment is currently being verified by our admin team.
                 </p>
                 
                 <div className="bg-tech-blue/10 rounded-lg p-4 border border-tech-blue/20">
@@ -61,7 +57,7 @@ const Success: React.FC = () => {
               <Button 
                 size="lg"
                 className="w-full bg-tech-blue hover:bg-tech-blue/90 text-white font-bold gap-2"
-                onClick={() => navigate('/')}
+                onClick={() => window.location.href = '/'}
               >
                 Return to Home
               </Button>
@@ -94,16 +90,17 @@ const Success: React.FC = () => {
                 size="lg"
                 className="w-full bg-tech-green hover:bg-tech-green/90 text-tech-dark font-bold gap-2"
                 onClick={handleDownload}
+                disabled={!hasPaid}
               >
                 <Download className="w-5 h-5" />
-                Download Omnia BOT
+                {hasPaid ? "Download Omnia BOT" : "Payment Required"}
               </Button>
-
-              <p className="text-sm text-gray-400">
-                Need help? Contact our <a href="/support" className="text-tech-blue hover:underline">support team</a>
-              </p>
             </>
           )}
+          
+          <p className="text-sm text-gray-400">
+            Need help? Contact our <a href="/support" className="text-tech-blue hover:underline">support team</a>
+          </p>
         </div>
       </div>
     </>

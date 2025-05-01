@@ -1,9 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Check, Zap, Download } from 'lucide-react';
+import { Check, Zap, Download, Copy, Bitcoin } from 'lucide-react';
 import { initializePayPalPayment } from '@/lib/paypal';
 import { useDownloadState } from '@/hooks/use-download-state';
 import { Helmet } from 'react-helmet';
+import { USDT_ADDRESS, initializeUSDTPayment } from '@/lib/crypto-payment';
+import { useCryptoPayment } from '@/hooks/use-crypto-payment';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { toast } from "@/components/ui/sonner";
 
 const pricingPlans = [
   {
@@ -27,23 +31,46 @@ const pricingPlans = [
     price: 499,
     planId: 'premium',
     period: 'one-time payment',
-    description: 'Advanced features for serious traders.',
+    description: 'Our most popular plan for serious traders.',
     features: [
-      'Multi-account license',
+      'Dual account license',
       'Access to all currency pairs',
-      'Advanced risk management',
-      'Priority support',
-      'Free lifetime updates',
-      'Custom indicators',
-      'Performance analytics'
+      'Advanced risk parameters',
+      'Priority email support',
+      'Free updates for 12 months',
+      'Performance analytics dashboard',
+      'Custom strategy configuration'
     ],
     isPopular: true,
-    cta: 'Get Premium'
+    cta: 'Buy Premium'
+  },
+  {
+    name: 'Ultimate',
+    price: 899,
+    planId: 'ultimate',
+    period: 'one-time payment',
+    description: 'Maximum flexibility for professional traders.',
+    features: [
+      'Five account license',
+      'Access to all currency pairs',
+      'Advanced risk parameters',
+      '24/7 priority support',
+      'Lifetime free updates',
+      'Performance analytics dashboard',
+      'Custom strategy configuration',
+      'VIP trading signals'
+    ],
+    isPopular: false,
+    cta: 'Go Ultimate'
   }
 ];
 
 const Pricing: React.FC = () => {
   const { hasPaid, handleDownload } = useDownloadState();
+  const [showCryptoDialog, setShowCryptoDialog] = useState(false);
+  const [currentPlan, setCurrentPlan] = useState<typeof pricingPlans[0] | null>(null);
+  const [cryptoTxId, setCryptoTxId] = useState<string | undefined>();
+  const { submitting, submitTransaction } = useCryptoPayment();
 
   const handlePurchase = (plan: typeof pricingPlans[0]) => {
     initializePayPalPayment({
@@ -51,6 +78,33 @@ const Pricing: React.FC = () => {
       price: plan.price,
       planId: plan.planId
     });
+  };
+
+  const handleCryptoPurchase = (plan: typeof pricingPlans[0]) => {
+    setCurrentPlan(plan);
+    setShowCryptoDialog(true);
+    
+    // Initialize crypto payment
+    const result = initializeUSDTPayment({
+      name: plan.name,
+      price: plan.price,
+      planId: plan.planId
+    });
+    
+    setCryptoTxId(result.txId);
+  };
+
+  const handleCopyAddress = () => {
+    navigator.clipboard.writeText(USDT_ADDRESS)
+      .then(() => toast.success("Address copied to clipboard"))
+      .catch(() => toast.error("Failed to copy address"));
+  };
+
+  const handleSubmitTransaction = () => {
+    if (cryptoTxId) {
+      submitTransaction(cryptoTxId);
+      setShowCryptoDialog(false);
+    }
   };
 
   return (
@@ -73,61 +127,81 @@ const Pricing: React.FC = () => {
             "aggregateRating": {
               "@type": "AggregateRating",
               "ratingValue": "4.8",
-              "ratingCount": "1500"
-            }
+              "ratingCount": "1500",
+              "reviewCount": "1500"
+            },
+            "review": [
+              {
+                "@type": "Review",
+                "reviewRating": {
+                  "@type": "Rating",
+                  "ratingValue": "5"
+                },
+                "author": {
+                  "@type": "Person",
+                  "name": "John Smith"
+                },
+                "reviewBody": "The AI-powered trading algorithms have completely transformed my trading experience. Highly recommended!"
+              },
+              {
+                "@type": "Review",
+                "reviewRating": {
+                  "@type": "Rating",
+                  "ratingValue": "5"
+                },
+                "author": {
+                  "@type": "Person",
+                  "name": "Sarah Johnson"
+                },
+                "reviewBody": "Exceptional performance and reliable automation. Worth every penny!"
+              }
+            ]
           })}
         </script>
       </Helmet>
 
-      <div className="relative py-24 overflow-hidden" id="pricing">
+      <div id="pricing" className="bg-tech-dark py-24 relative">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
+          <div className="text-center max-w-3xl mx-auto mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              <span className="text-gradient">Simple</span> Pricing,{" "}
-              <span className="text-gradient">Powerful</span> Features
+              <span className="purple-glow-text">Invest</span> in Your <span className="glow-text">Success</span>
             </h2>
-            <p className="text-gray-300 text-lg max-w-2xl mx-auto">
-              Choose the plan that best fits your trading needs. All plans include our core AI-powered trading technology.
+            <p className="text-gray-300 text-lg">
+              Choose the perfect plan that aligns with your trading goals and preferences.
             </p>
           </div>
-
-          <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-            {pricingPlans.map((plan) => (
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {pricingPlans.map((plan, index) => (
               <div 
-                key={plan.name}
-                className={`relative tech-card p-6 ${
-                  plan.isPopular ? 'border-2 border-tech-green' : ''
-                }`}
+                key={index} 
+                className={`tech-card relative ${plan.isPopular ? 'border-tech-green glow-border' : 'hover:border-tech-blue/40'} transition-all duration-300`}
               >
                 {plan.isPopular && (
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                    <span className="bg-tech-green text-tech-dark text-sm font-bold px-3 py-1 rounded-full flex items-center gap-1">
-                      <Zap className="w-4 h-4" />
-                      Most Popular
-                    </span>
+                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 px-4 py-1 bg-tech-green text-tech-dark text-sm font-bold rounded-full flex items-center gap-1">
+                    <Zap className="w-4 h-4" />
+                    Most Popular
                   </div>
                 )}
-
-                <div className="text-center mb-6">
-                  <h3 className="text-xl font-bold text-white mb-2">{plan.name}</h3>
-                  <div className="text-3xl font-bold text-tech-blue mb-2">
-                    ${plan.price}
-                  </div>
-                  <p className="text-gray-400 text-sm">{plan.period}</p>
+                
+                <h3 className="text-2xl font-bold mb-2 text-white">{plan.name}</h3>
+                <div className="mb-4">
+                  <span className="text-3xl font-bold text-white">${plan.price}</span>
+                  <span className="text-gray-400 text-sm"> / {plan.period}</span>
                 </div>
-
-                <div className="space-y-4 mb-6">
-                  <p className="text-gray-300">{plan.description}</p>
-                  <ul className="space-y-3">
-                    {plan.features.map((feature, index) => (
-                      <li key={index} className="flex items-center text-gray-300">
-                        <Check className="w-5 h-5 text-tech-green mr-2 flex-shrink-0" />
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
+                <p className="text-gray-300 mb-6">{plan.description}</p>
+                
+                <div className="space-y-3 mb-8">
+                  {plan.features.map((feature, i) => (
+                    <div key={i} className="flex items-start gap-2">
+                      <div className="min-w-4 h-4 rounded-full bg-tech-green/20 flex items-center justify-center mt-1">
+                        <Check className="w-3 h-3 text-tech-green" />
+                      </div>
+                      <span className="text-gray-300">{feature}</span>
+                    </div>
+                  ))}
                 </div>
-
+                
                 <div className="space-y-3">
                   <Button 
                     className={`w-full ${
@@ -138,6 +212,14 @@ const Pricing: React.FC = () => {
                     onClick={() => handlePurchase(plan)}
                   >
                     {plan.cta} with PayPal
+                  </Button>
+                  
+                  <Button 
+                    className="w-full bg-tech-purple hover:bg-tech-purple/90 text-white gap-2"
+                    onClick={() => handleCryptoPurchase(plan)}
+                  >
+                    <Bitcoin className="w-4 h-4" />
+                    Pay with USDT
                   </Button>
                 </div>
                 
@@ -153,7 +235,7 @@ const Pricing: React.FC = () => {
               </div>
             ))}
           </div>
-
+          
           <div className="mt-12 text-center max-w-xl mx-auto">
             <p className="text-gray-400 text-sm">
               All plans include a 30-day money-back guarantee. If you're not satisfied with the performance of Omnia BOT, we'll refund your purchase.
@@ -163,6 +245,52 @@ const Pricing: React.FC = () => {
         
         <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-tech-blue/50 to-transparent"></div>
       </div>
+
+      {/* Crypto Payment Dialog */}
+      <Dialog open={showCryptoDialog} onOpenChange={setShowCryptoDialog}>
+        <DialogContent className="bg-tech-dark border-tech-blue/30">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-center">
+              Pay with USDT (Tether)
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="text-center">
+              <p className="text-gray-300">Send <span className="text-tech-green font-bold">
+                ${currentPlan?.price} USDT
+              </span> to the following address:</p>
+            </div>
+            
+            <div className="bg-tech-charcoal p-4 rounded-lg border border-tech-blue/30">
+              <div className="flex items-center space-x-2">
+                <div className="break-all text-sm text-gray-300 font-mono">
+                  {USDT_ADDRESS}
+                </div>
+                <Button variant="outline" size="sm" onClick={handleCopyAddress} className="shrink-0">
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            
+            <div className="bg-tech-blue/10 p-4 rounded-lg">
+              <p className="text-sm text-gray-300">
+                <span className="text-tech-blue font-bold">Important:</span> Please send only USDT on the Binance Smart Chain (BEP20) network. After sending, click the button below to submit your transaction for manual verification by an admin.
+              </p>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              onClick={handleSubmitTransaction} 
+              className="w-full bg-tech-green text-tech-dark font-bold"
+              disabled={submitting}
+            >
+              {submitting ? "Submitting..." : "I've Sent the Payment"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
