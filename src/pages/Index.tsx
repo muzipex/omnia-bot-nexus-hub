@@ -1,3 +1,4 @@
+
 import React from 'react';
 import Navbar from '../components/Navbar';
 import Hero from '../components/Hero';
@@ -8,12 +9,14 @@ import Pricing from '../components/Pricing';
 import CTA from '../components/CTA';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
+import MatrixCandleStickBackground from '../components/MatrixCandleStickBackground';
 
 const Index = () => {
   return (
     <>
       <SEO />
       <div className="min-h-screen bg-tech-dark flex flex-col relative">
+        <MatrixCandleStickBackground />
         <header role="banner">
           <Navbar />
         </header>
