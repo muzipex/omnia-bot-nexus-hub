@@ -1,5 +1,6 @@
 
 import { toast } from "@/components/ui/sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 // USDT Payment address (Binance)
 export const USDT_ADDRESS = "0xfd78ec55f626e38da6420983b55987952363417f";
@@ -17,7 +18,7 @@ export const initializeUSDTPayment = (details: CryptoPaymentDetails) => {
   // Generate a unique transaction ID
   const txId = `USDT-${planId}-${Date.now()}`;
   
-  // Store pending transaction in localStorage
+  // Store pending transaction in localStorage for offline access
   const pendingTransaction = {
     txId,
     planId,
@@ -31,6 +32,25 @@ export const initializeUSDTPayment = (details: CryptoPaymentDetails) => {
   const pendingTransactions = JSON.parse(localStorage.getItem('pending_crypto_transactions') || '[]');
   pendingTransactions.push(pendingTransaction);
   localStorage.setItem('pending_crypto_transactions', JSON.stringify(pendingTransactions));
+  
+  // Try to store in Supabase as well
+  (async () => {
+    try {
+      await supabase
+        .from('transactions')
+        .insert([{
+          tx_id: txId,
+          plan_id: planId,
+          price: price,
+          name: name,
+          status: 'pending',
+          payment_method: 'USDT'
+        }]);
+    } catch (error) {
+      console.error("Error storing transaction in Supabase:", error);
+      // This is fine, we'll use localStorage as fallback
+    }
+  })();
   
   // Copy address to clipboard
   navigator.clipboard.writeText(USDT_ADDRESS)
@@ -48,31 +68,86 @@ export const initializeUSDTPayment = (details: CryptoPaymentDetails) => {
   };
 };
 
-// Function to simulate transaction verification (in production, this would connect to an API)
+// Function to verify USDT transaction (in production, this would connect to an API)
 export const verifyUSDTTransaction = async (txId: string): Promise<boolean> => {
-  // In a real implementation, you would check with a blockchain API
-  // For demo purposes, we'll simulate a successful verification
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      // 80% chance of success for demo purposes
-      const isVerified = Math.random() < 0.8;
+  try {
+    // First check if the transaction exists in Supabase
+    const { data, error } = await supabase
+      .from('transactions')
+      .select('status')
+      .eq('tx_id', txId)
+      .single();
       
-      if (isVerified) {
-        // Update transaction status in localStorage
-        const pendingTransactions = JSON.parse(localStorage.getItem('pending_crypto_transactions') || '[]');
-        const updatedTransactions = pendingTransactions.map((tx: any) => {
-          if (tx.txId === txId) {
-            return { ...tx, status: 'completed' };
-          }
-          return tx;
-        });
-        localStorage.setItem('pending_crypto_transactions', JSON.stringify(updatedTransactions));
-        
-        // Set payment status
-        localStorage.setItem('omniabot_payment_verified', 'true');
+    if (!error && data && data.status === 'completed') {
+      // Transaction is already verified in Supabase
+      
+      // Update localStorage for offline access
+      const pendingTransactions = JSON.parse(localStorage.getItem('pending_crypto_transactions') || '[]');
+      const updatedTransactions = pendingTransactions.map((tx: any) => {
+        if (tx.txId === txId) {
+          return { ...tx, status: 'completed' };
+        }
+        return tx;
+      });
+      localStorage.setItem('pending_crypto_transactions', JSON.stringify(updatedTransactions));
+      
+      // Set payment status
+      localStorage.setItem('omniabot_payment_verified', 'true');
+      
+      // Add to verified transactions
+      const verifiedTransactions = JSON.parse(localStorage.getItem('verified_transactions') || '[]');
+      if (!verifiedTransactions.includes(txId)) {
+        verifiedTransactions.push(txId);
+        localStorage.setItem('verified_transactions', JSON.stringify(verifiedTransactions));
       }
       
-      resolve(isVerified);
-    }, 3000); // Simulate network delay
-  });
+      return true;
+    }
+    
+    // If not verified in Supabase, simulate verification for demo
+    // In a real app, you would check with a blockchain API
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        // 20% chance of success for demo purposes (since we want admin to verify most transactions)
+        const isVerified = Math.random() < 0.2;
+        
+        if (isVerified) {
+          // Update transaction status in Supabase
+          supabase
+            .from('transactions')
+            .update({ status: 'completed' })
+            .eq('tx_id', txId)
+            .then(() => {
+              // Update transaction status in localStorage
+              const pendingTransactions = JSON.parse(localStorage.getItem('pending_crypto_transactions') || '[]');
+              const updatedTransactions = pendingTransactions.map((tx: any) => {
+                if (tx.txId === txId) {
+                  return { ...tx, status: 'completed' };
+                }
+                return tx;
+              });
+              localStorage.setItem('pending_crypto_transactions', JSON.stringify(updatedTransactions));
+              
+              // Set payment status
+              localStorage.setItem('omniabot_payment_verified', 'true');
+              
+              // Add to verified transactions
+              const verifiedTransactions = JSON.parse(localStorage.getItem('verified_transactions') || '[]');
+              if (!verifiedTransactions.includes(txId)) {
+                verifiedTransactions.push(txId);
+                localStorage.setItem('verified_transactions', JSON.stringify(verifiedTransactions));
+              }
+            })
+            .catch(error => {
+              console.error("Error updating transaction status in Supabase:", error);
+            });
+        }
+        
+        resolve(isVerified);
+      }, 3000); // Simulate network delay
+    });
+  } catch (error) {
+    console.error("Error verifying transaction:", error);
+    return false;
+  }
 };

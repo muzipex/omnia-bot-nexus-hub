@@ -127,91 +127,216 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
   const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
-    // Load pending transactions from localStorage
-    const pendingTransactions = JSON.parse(localStorage.getItem('pending_crypto_transactions') || '[]');
-    
-    // In a real app, you would fetch these from a backend
-    // For demo purposes, we'll create some mock data
-    const mockTransactions: PaymentTransaction[] = [
-      ...pendingTransactions.map((tx: any) => ({
-        ...tx,
-        paymentMethod: 'USDT'
-      })),
-      {
-        txId: 'PAYPAL-1234567',
-        planId: 'premium',
-        price: 499,
-        name: 'Premium',
-        timestamp: Date.now() - 3600000,
-        status: 'pending',
-        paymentMethod: 'PayPal'
-      },
-      {
-        txId: 'PAYPAL-7654321',
-        planId: 'standard',
-        price: 299,
-        name: 'Standard',
-        timestamp: Date.now() - 7200000,
-        status: 'completed',
-        paymentMethod: 'PayPal'
+    const fetchTransactions = async () => {
+      try {
+        // Fetch transactions from Supabase
+        const { data: supabaseTransactions, error } = await supabase
+          .from('transactions')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error("Error fetching transactions:", error);
+          // Fallback to localStorage if Supabase query fails
+          const pendingTransactions = JSON.parse(localStorage.getItem('pending_crypto_transactions') || '[]');
+          const localTransactions = pendingTransactions.map((tx: any) => ({
+            txId: tx.txId,
+            planId: tx.planId,
+            price: tx.price,
+            name: tx.name,
+            timestamp: tx.timestamp,
+            status: tx.status || 'pending',
+            paymentMethod: 'USDT'
+          }));
+          
+          // Add some mock data for demonstration
+          const mockTransactions = [
+            {
+              txId: 'PAYPAL-1234567',
+              planId: 'premium',
+              price: 499,
+              name: 'Premium',
+              timestamp: Date.now() - 3600000,
+              status: 'pending',
+              paymentMethod: 'PayPal'
+            },
+            {
+              txId: 'PAYPAL-7654321',
+              planId: 'standard',
+              price: 299,
+              name: 'Standard',
+              timestamp: Date.now() - 7200000,
+              status: 'completed',
+              paymentMethod: 'PayPal'
+            }
+          ];
+          
+          setTransactions([...localTransactions, ...mockTransactions]);
+          return;
+        }
+
+        // Transform Supabase data to match our component's expected format
+        const formattedTransactions = supabaseTransactions.map(tx => ({
+          txId: tx.tx_id,
+          planId: tx.plan_id,
+          price: Number(tx.price),
+          name: tx.name,
+          timestamp: new Date(tx.timestamp).getTime(),
+          status: tx.status as 'pending' | 'completed' | 'rejected',
+          paymentMethod: tx.payment_method
+        }));
+
+        // Also check localStorage for any transactions not yet in Supabase
+        const pendingTransactions = JSON.parse(localStorage.getItem('pending_crypto_transactions') || '[]');
+        const localTransactions = pendingTransactions
+          .filter((tx: any) => !formattedTransactions.some(ft => ft.txId === tx.txId))
+          .map((tx: any) => ({
+            txId: tx.txId,
+            planId: tx.planId,
+            price: tx.price,
+            name: tx.name,
+            timestamp: tx.timestamp,
+            status: tx.status || 'pending',
+            paymentMethod: 'USDT'
+          }));
+        
+        setTransactions([...formattedTransactions, ...localTransactions]);
+      } catch (error) {
+        console.error("Error loading transactions:", error);
+        // Fallback to mock data
+        const mockTransactions = [
+          {
+            txId: 'USDT-12345',
+            planId: 'premium',
+            price: 499,
+            name: 'Premium',
+            timestamp: Date.now(),
+            status: 'pending',
+            paymentMethod: 'USDT'
+          }
+        ];
+        
+        setTransactions(mockTransactions);
       }
-    ];
+    };
 
-    setTransactions(mockTransactions);
-
-    // Mock visitor data with country information
+    // Generate mock visitor data - in a real app, this would be fetched from analytics
     const countries = ['United States', 'United Kingdom', 'Canada', 'Germany', 'Japan', 'Australia', 'Brazil', 'India'];
     const pages = ['/', '/models', '/success', '/admin'];
-    
-    const mockVisitors: Visitor[] = Array.from({ length: 20 }, (_, i) => ({
+    const mockVisitors = Array.from({ length: 20 }, (_, i) => ({
       id: `visitor-${i+1}`,
       timestamp: Date.now() - (i * 900000),
       page: pages[Math.floor(Math.random() * pages.length)],
       referrer: Math.random() > 0.5 ? ['google.com', 'facebook.com', 'twitter.com'][Math.floor(Math.random() * 3)] : null,
       country: countries[Math.floor(Math.random() * countries.length)]
     }));
-
+    
     setVisitors(mockVisitors);
+    fetchTransactions();
   }, []);
 
-  const approvePayment = (txId: string) => {
-    // Update transaction status
-    setTransactions(transactions.map(tx => 
-      tx.txId === txId ? { ...tx, status: 'completed' } : tx
-    ));
+  const approvePayment = async (txId: string) => {
+    try {
+      // Update transaction in Supabase
+      const { error } = await supabase
+        .from('transactions')
+        .update({ status: 'completed' })
+        .eq('tx_id', txId);
 
-    // In a real app, this would update a database
-    // For demo, we'll update localStorage
-    const pendingTransactions = JSON.parse(localStorage.getItem('pending_crypto_transactions') || '[]');
-    const updatedTransactions = pendingTransactions.map((tx: any) => 
-      tx.txId === txId ? { ...tx, status: 'completed' } : tx
-    );
-    localStorage.setItem('pending_crypto_transactions', JSON.stringify(updatedTransactions));
-    
-    // Also store in verified_transactions for cross-device consistency
-    const verifiedTransactions = JSON.parse(localStorage.getItem('verified_transactions') || '[]');
-    if (!verifiedTransactions.includes(txId)) {
-      verifiedTransactions.push(txId);
-      localStorage.setItem('verified_transactions', JSON.stringify(verifiedTransactions));
+      if (error) {
+        console.error("Error updating transaction in Supabase:", error);
+        toast.error("Error updating transaction in database");
+        
+        // Still update UI and localStorage as fallback
+        setTransactions(transactions.map(tx => 
+          tx.txId === txId ? { ...tx, status: 'completed' } : tx
+        ));
+        
+        const pendingTransactions = JSON.parse(localStorage.getItem('pending_crypto_transactions') || '[]');
+        const updatedTransactions = pendingTransactions.map((tx: any) => 
+          tx.txId === txId ? { ...tx, status: 'completed' } : tx
+        );
+        localStorage.setItem('pending_crypto_transactions', JSON.stringify(updatedTransactions));
+        
+        // Also store in verified_transactions for cross-device consistency
+        const verifiedTransactions = JSON.parse(localStorage.getItem('verified_transactions') || '[]');
+        if (!verifiedTransactions.includes(txId)) {
+          verifiedTransactions.push(txId);
+          localStorage.setItem('verified_transactions', JSON.stringify(verifiedTransactions));
+        }
+        
+        return;
+      }
+
+      // Update UI state
+      setTransactions(transactions.map(tx => 
+        tx.txId === txId ? { ...tx, status: 'completed' } : tx
+      ));
+      
+      // Also update localStorage for compatibility
+      const pendingTransactions = JSON.parse(localStorage.getItem('pending_crypto_transactions') || '[]');
+      const updatedTransactions = pendingTransactions.map((tx: any) => 
+        tx.txId === txId ? { ...tx, status: 'completed' } : tx
+      );
+      localStorage.setItem('pending_crypto_transactions', JSON.stringify(updatedTransactions));
+      
+      // Also store in verified_transactions for cross-device consistency
+      const verifiedTransactions = JSON.parse(localStorage.getItem('verified_transactions') || '[]');
+      if (!verifiedTransactions.includes(txId)) {
+        verifiedTransactions.push(txId);
+        localStorage.setItem('verified_transactions', JSON.stringify(verifiedTransactions));
+      }
+      
+      toast.success("Payment approved");
+    } catch (error) {
+      console.error("Error approving payment:", error);
+      toast.error("Error approving payment");
     }
-    
-    toast.success("Payment approved");
   };
 
-  const rejectPayment = (txId: string) => {
-    // Update transaction status
-    setTransactions(transactions.map(tx => 
-      tx.txId === txId ? { ...tx, status: 'rejected' } : tx
-    ));
+  const rejectPayment = async (txId: string) => {
+    try {
+      // Update transaction in Supabase
+      const { error } = await supabase
+        .from('transactions')
+        .update({ status: 'rejected' })
+        .eq('tx_id', txId);
 
-    // In a real app, this would update a database
-    const pendingTransactions = JSON.parse(localStorage.getItem('pending_crypto_transactions') || '[]');
-    const updatedTransactions = pendingTransactions.map((tx: any) => 
-      tx.txId === txId ? { ...tx, status: 'rejected' } : tx
-    );
-    localStorage.setItem('pending_crypto_transactions', JSON.stringify(updatedTransactions));
-    
-    toast.success("Payment rejected");
+      if (error) {
+        console.error("Error updating transaction in Supabase:", error);
+        toast.error("Error updating transaction in database");
+        
+        // Still update UI and localStorage as fallback
+        setTransactions(transactions.map(tx => 
+          tx.txId === txId ? { ...tx, status: 'rejected' } : tx
+        ));
+        
+        const pendingTransactions = JSON.parse(localStorage.getItem('pending_crypto_transactions') || '[]');
+        const updatedTransactions = pendingTransactions.map((tx: any) => 
+          tx.txId === txId ? { ...tx, status: 'rejected' } : tx
+        );
+        localStorage.setItem('pending_crypto_transactions', JSON.stringify(updatedTransactions));
+        
+        return;
+      }
+
+      // Update UI state
+      setTransactions(transactions.map(tx => 
+        tx.txId === txId ? { ...tx, status: 'rejected' } : tx
+      ));
+      
+      // Also update localStorage for compatibility
+      const pendingTransactions = JSON.parse(localStorage.getItem('pending_crypto_transactions') || '[]');
+      const updatedTransactions = pendingTransactions.map((tx: any) => 
+        tx.txId === txId ? { ...tx, status: 'rejected' } : tx
+      );
+      localStorage.setItem('pending_crypto_transactions', JSON.stringify(updatedTransactions));
+      
+      toast.success("Payment rejected");
+    } catch (error) {
+      console.error("Error rejecting payment:", error);
+      toast.error("Error rejecting payment");
+    }
   };
 
   const formatDate = (timestamp: number) => {
