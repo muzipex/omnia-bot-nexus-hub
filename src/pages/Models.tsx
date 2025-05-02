@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Check, Download, CreditCard, ArrowRight, Bitcoin } from "lucide-react";
@@ -152,8 +152,14 @@ const Models: React.FC = () => {
     if (cryptoTxId) {
       submitTransaction(cryptoTxId);
       setShowCryptoDialog(false);
+      
+      // Redirect to success page with transaction ID for verification
+      navigate(`/success?payment_pending=true&txId=${cryptoTxId}`);
     }
   };
+
+  // Always show download button if payment is made/verified
+  const showDownloadButton = hasPaid || isVerified;
 
   return (
     <>
@@ -300,12 +306,13 @@ const Models: React.FC = () => {
                   Proceed to Payment
                 </Button>
                 
-                {(isVerified || hasPaid) && (
+                {/* Always show the download button if user has paid or payment is verified */}
+                {(showDownloadButton || isLoading) && (
                   <div className="mt-6 text-center">
                     <Button 
                       className="bg-tech-blue hover:bg-tech-blue/90 text-white gap-2"
                       onClick={handleDownload}
-                      disabled={isLoading}
+                      disabled={isLoading && !hasPaid && !isVerified}
                     >
                       <Download className="w-4 h-4" />
                       {isLoading ? "Verifying Payment..." : "Download Software"}

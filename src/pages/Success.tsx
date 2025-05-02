@@ -5,11 +5,14 @@ import { Download, CheckCircle, Clock } from 'lucide-react';
 import { useDownloadState } from '@/hooks/use-download-state';
 import SEO from '../components/SEO';
 import Breadcrumbs from '../components/Breadcrumbs';
+import { usePaymentVerification } from '@/hooks/use-payment-verification';
 
 const Success: React.FC = () => {
   const { hasPaid, handleDownload } = useDownloadState();
   const urlParams = new URLSearchParams(window.location.search);
   const paymentPending = urlParams.get('payment_pending') === 'true';
+  const transactionId = urlParams.get('txId') || undefined;
+  const { isVerified, isLoading } = usePaymentVerification(transactionId);
 
   useEffect(() => {
     console.log('Purchase conversion completed');
@@ -61,6 +64,17 @@ const Success: React.FC = () => {
               >
                 Return to Home
               </Button>
+              
+              {/* Always show download button but disable it if not verified */}
+              <Button 
+                size="lg"
+                className="w-full bg-tech-green/70 hover:bg-tech-green/90 text-tech-dark font-bold gap-2"
+                onClick={handleDownload}
+                disabled={!hasPaid && !isVerified}
+              >
+                <Download className="w-5 h-5" />
+                {isLoading ? "Verifying Payment..." : (hasPaid || isVerified) ? "Download Omnia BOT" : "Payment Verification Required"}
+              </Button>
             </>
           ) : (
             <>
@@ -90,10 +104,10 @@ const Success: React.FC = () => {
                 size="lg"
                 className="w-full bg-tech-green hover:bg-tech-green/90 text-tech-dark font-bold gap-2"
                 onClick={handleDownload}
-                disabled={!hasPaid}
+                disabled={!hasPaid && !isVerified && !isLoading}
               >
                 <Download className="w-5 h-5" />
-                {hasPaid ? "Download Omnia BOT" : "Payment Required"}
+                {isLoading ? "Verifying Payment..." : "Download Omnia BOT"}
               </Button>
             </>
           )}

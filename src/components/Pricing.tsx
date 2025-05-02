@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Check, Zap, Download, Copy, Bitcoin } from 'lucide-react';
 import { initializePayPalPayment } from '@/lib/paypal';
@@ -8,6 +8,8 @@ import { USDT_ADDRESS, initializeUSDTPayment } from '@/lib/crypto-payment';
 import { useCryptoPayment } from '@/hooks/use-crypto-payment';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "@/components/ui/sonner";
+import { useNavigate } from 'react-router-dom';
+import { usePaymentVerification } from '@/hooks/use-payment-verification';
 
 const pricingPlans = [
   {
@@ -71,6 +73,8 @@ const Pricing: React.FC = () => {
   const [currentPlan, setCurrentPlan] = useState<typeof pricingPlans[0] | null>(null);
   const [cryptoTxId, setCryptoTxId] = useState<string | undefined>();
   const { submitting, submitTransaction } = useCryptoPayment();
+  const navigate = useNavigate();
+  const { isVerified, isLoading } = usePaymentVerification(cryptoTxId);
 
   const handlePurchase = (plan: typeof pricingPlans[0]) => {
     initializePayPalPayment({
@@ -104,8 +108,14 @@ const Pricing: React.FC = () => {
     if (cryptoTxId) {
       submitTransaction(cryptoTxId);
       setShowCryptoDialog(false);
+      
+      // Redirect to success page with transaction ID for verification
+      navigate(`/success?payment_pending=true&txId=${cryptoTxId}`);
     }
   };
+
+  // Always show download button if payment is made/verified
+  const showDownloadButton = hasPaid || isVerified;
 
   return (
     <>
@@ -223,13 +233,15 @@ const Pricing: React.FC = () => {
                   </Button>
                 </div>
                 
-                {hasPaid && (
+                {/* Always show the download button if user has paid or payment is verified */}
+                {(showDownloadButton || isLoading) && (
                   <Button 
                     className="w-full mt-4 bg-tech-blue hover:bg-tech-blue/90 text-white gap-2"
                     onClick={handleDownload}
+                    disabled={isLoading && !hasPaid && !isVerified}
                   >
                     <Download className="w-4 h-4" />
-                    Download Software
+                    {isLoading ? "Verifying Payment..." : "Download Software"}
                   </Button>
                 )}
               </div>

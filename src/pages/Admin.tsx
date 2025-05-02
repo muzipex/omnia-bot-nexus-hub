@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '@/hooks/use-admin-auth';
@@ -188,6 +187,13 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
       tx.txId === txId ? { ...tx, status: 'completed' } : tx
     );
     localStorage.setItem('pending_crypto_transactions', JSON.stringify(updatedTransactions));
+    
+    // Also store in verified_transactions for cross-device consistency
+    const verifiedTransactions = JSON.parse(localStorage.getItem('verified_transactions') || '[]');
+    if (!verifiedTransactions.includes(txId)) {
+      verifiedTransactions.push(txId);
+      localStorage.setItem('verified_transactions', JSON.stringify(verifiedTransactions));
+    }
     
     toast.success("Payment approved");
   };

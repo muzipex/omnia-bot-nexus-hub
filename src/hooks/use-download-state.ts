@@ -21,6 +21,14 @@ export const useDownloadState = () => {
       if (storedPaymentStatus === 'true') {
         setHasPaid(true);
       }
+      
+      // Also check if any of the user's transactions have been verified
+      // This connects the admin verification to the user download capability
+      const verifiedTransactions = JSON.parse(localStorage.getItem('verified_transactions') || '[]');
+      if (verifiedTransactions.length > 0) {
+        setHasPaid(true);
+        localStorage.setItem('omniabot_payment_verified', 'true');
+      }
     }
   }, []);
 
@@ -30,7 +38,7 @@ export const useDownloadState = () => {
       toast.success("Download started!");
       window.location.href = '/downloads/omnia-bot-latest.zip';
     } else {
-      // Redirect to pricing page if not paid
+      // Show error message if not paid
       toast.error("Payment verification required");
       window.location.href = '#pricing';
     }
