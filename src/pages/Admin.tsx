@@ -5,6 +5,7 @@ import Breadcrumbs from '../components/Breadcrumbs';
 import SEO from '../components/SEO';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   Table, 
   TableBody, 
@@ -64,21 +65,32 @@ interface Visitor {
 
 const COLORS = ['#9b87f5', '#7E69AB', '#6E59A5', '#1EAEDB', '#33C3F0', '#D6BCFA'];
 
-const AdminLogin: React.FC<{ onLogin: (username: string, password: string) => boolean }> = ({ onLogin }) => {
+const AdminLogin: React.FC<{ onLogin: (username: string, password: string) => Promise<boolean> }> = ({ onLogin }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoggingIn(true);
+    
     if (!username || !password) {
       setError('Please enter both username and password');
+      setIsLoggingIn(false);
       return;
     }
 
-    const success = onLogin(username, password);
-    if (!success) {
-      setError('Invalid credentials');
+    try {
+      const success = await onLogin(username, password);
+      if (!success) {
+        setError('Invalid credentials');
+      }
+    } catch (error) {
+      setError('Login failed. Please try again.');
+      console.error("Login error:", error);
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
@@ -98,6 +110,7 @@ const AdminLogin: React.FC<{ onLogin: (username: string, password: string) => bo
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className="bg-tech-charcoal border-tech-blue/30"
+              disabled={isLoggingIn}
             />
           </div>
           
@@ -109,11 +122,12 @@ const AdminLogin: React.FC<{ onLogin: (username: string, password: string) => bo
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="bg-tech-charcoal border-tech-blue/30"
+              disabled={isLoggingIn}
             />
           </div>
           
-          <Button type="submit" className="w-full bg-tech-blue">
-            Login
+          <Button type="submit" className="w-full bg-tech-blue" disabled={isLoggingIn}>
+            {isLoggingIn ? 'Logging in...' : 'Login'}
           </Button>
         </form>
       </div>
@@ -125,9 +139,11 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
   const [transactions, setTransactions] = useState<PaymentTransaction[]>([]);
   const [visitors, setVisitors] = useState<Visitor[]>([]);
   const [activeTab, setActiveTab] = useState('overview');
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const fetchTransactions = async () => {
+      setIsLoading(true);
       try {
         // Fetch transactions from Supabase
         const { data: supabaseTransactions, error } = await supabase
@@ -139,18 +155,19 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
           console.error("Error fetching transactions:", error);
           // Fallback to localStorage if Supabase query fails
           const pendingTransactions = JSON.parse(localStorage.getItem('pending_crypto_transactions') || '[]');
-          const localTransactions = pendingTransactions.map((tx: any) => ({
+          const localTransactions: PaymentTransaction[] = pendingTransactions.map((tx: any) => ({
             txId: tx.txId,
             planId: tx.planId,
             price: tx.price,
             name: tx.name,
             timestamp: tx.timestamp,
-            status: tx.status || 'pending',
+            status: tx.status === 'completed' ? 'completed' : 
+                   tx.status === 'rejected' ? 'rejected' : 'pending',
             paymentMethod: 'USDT'
           }));
           
           // Add some mock data for demonstration
-          const mockTransactions = [
+          const mockTransactions: PaymentTransaction[] = [
             {
               txId: 'PAYPAL-1234567',
               planId: 'premium',
@@ -172,11 +189,12 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
           ];
           
           setTransactions([...localTransactions, ...mockTransactions]);
+          setIsLoading(false);
           return;
         }
 
         // Transform Supabase data to match our component's expected format
-        const formattedTransactions = supabaseTransactions.map(tx => ({
+        const formattedTransactions: PaymentTransaction[] = supabaseTransactions.map(tx => ({
           txId: tx.tx_id,
           planId: tx.plan_id,
           price: Number(tx.price),
@@ -188,7 +206,7 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
 
         // Also check localStorage for any transactions not yet in Supabase
         const pendingTransactions = JSON.parse(localStorage.getItem('pending_crypto_transactions') || '[]');
-        const localTransactions = pendingTransactions
+        const localTransactions: PaymentTransaction[] = pendingTransactions
           .filter((tx: any) => !formattedTransactions.some(ft => ft.txId === tx.txId))
           .map((tx: any) => ({
             txId: tx.txId,
@@ -196,7 +214,8 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
             price: tx.price,
             name: tx.name,
             timestamp: tx.timestamp,
-            status: tx.status || 'pending',
+            status: tx.status === 'completed' ? 'completed' : 
+                   tx.status === 'rejected' ? 'rejected' : 'pending',
             paymentMethod: 'USDT'
           }));
         
@@ -204,7 +223,7 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
       } catch (error) {
         console.error("Error loading transactions:", error);
         // Fallback to mock data
-        const mockTransactions = [
+        const mockTransactions: PaymentTransaction[] = [
           {
             txId: 'USDT-12345',
             planId: 'premium',
@@ -217,6 +236,8 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
         ];
         
         setTransactions(mockTransactions);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -578,66 +599,72 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
         
         <TabsContent value="payments" className="space-y-4">
           <div className="tech-card">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Transaction ID</TableHead>
-                  <TableHead>Plan</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Method</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {transactions.length === 0 ? (
+            {isLoading ? (
+              <div className="flex justify-center items-center p-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-tech-blue"></div>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center">No transactions found</TableCell>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Transaction ID</TableHead>
+                    <TableHead>Plan</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Method</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
-                ) : (
-                  transactions.map((tx) => (
-                    <TableRow key={tx.txId}>
-                      <TableCell>{formatDate(tx.timestamp)}</TableCell>
-                      <TableCell className="font-mono text-xs">{tx.txId}</TableCell>
-                      <TableCell>{tx.name}</TableCell>
-                      <TableCell>${tx.price}</TableCell>
-                      <TableCell>{tx.paymentMethod}</TableCell>
-                      <TableCell>
-                        <span className={`inline-block px-2 py-1 rounded text-xs ${
-                          tx.status === 'completed' ? 'bg-green-500/20 text-green-400' :
-                          tx.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
-                          'bg-yellow-500/20 text-yellow-400'
-                        }`}>
-                          {tx.status}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        {tx.status === 'pending' && (
-                          <div className="flex space-x-2">
-                            <Button 
-                              size="sm" 
-                              className="bg-tech-green text-tech-dark h-8 px-2"
-                              onClick={() => approvePayment(tx.txId)}
-                            >
-                              <Check className="w-4 h-4" />
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              className="border-red-500/30 text-red-400 h-8 px-2"
-                              onClick={() => rejectPayment(tx.txId)}
-                            >
-                              <X className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        )}
-                      </TableCell>
+                </TableHeader>
+                <TableBody>
+                  {transactions.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center">No transactions found</TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  ) : (
+                    transactions.map((tx) => (
+                      <TableRow key={tx.txId}>
+                        <TableCell>{formatDate(tx.timestamp)}</TableCell>
+                        <TableCell className="font-mono text-xs">{tx.txId}</TableCell>
+                        <TableCell>{tx.name}</TableCell>
+                        <TableCell>${tx.price}</TableCell>
+                        <TableCell>{tx.paymentMethod}</TableCell>
+                        <TableCell>
+                          <span className={`inline-block px-2 py-1 rounded text-xs ${
+                            tx.status === 'completed' ? 'bg-green-500/20 text-green-400' :
+                            tx.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
+                            'bg-yellow-500/20 text-yellow-400'
+                          }`}>
+                            {tx.status}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          {tx.status === 'pending' && (
+                            <div className="flex space-x-2">
+                              <Button 
+                                size="sm" 
+                                className="bg-tech-green text-tech-dark h-8 px-2"
+                                onClick={() => approvePayment(tx.txId)}
+                              >
+                                <Check className="w-4 h-4" />
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="border-red-500/30 text-red-400 h-8 px-2"
+                                onClick={() => rejectPayment(tx.txId)}
+                              >
+                                <X className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            )}
           </div>
         </TabsContent>
         
