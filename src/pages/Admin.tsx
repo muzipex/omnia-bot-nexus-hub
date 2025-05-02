@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '@/hooks/use-admin-auth';
@@ -14,8 +15,35 @@ import {
   TableRow 
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Check, X } from "lucide-react";
+import { Check, X, Users, Globe, ChartBar } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
+import {
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 
 interface PaymentTransaction {
   txId: string;
@@ -32,7 +60,10 @@ interface Visitor {
   timestamp: number;
   page: string;
   referrer: string | null;
+  country: string;
 }
+
+const COLORS = ['#9b87f5', '#7E69AB', '#6E59A5', '#1EAEDB', '#33C3F0', '#D6BCFA'];
 
 const AdminLogin: React.FC<{ onLogin: (username: string, password: string) => boolean }> = ({ onLogin }) => {
   const [username, setUsername] = useState('');
@@ -94,7 +125,7 @@ const AdminLogin: React.FC<{ onLogin: (username: string, password: string) => bo
 const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
   const [transactions, setTransactions] = useState<PaymentTransaction[]>([]);
   const [visitors, setVisitors] = useState<Visitor[]>([]);
-  const [activeTab, setActiveTab] = useState('payments');
+  const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
     // Load pending transactions from localStorage
@@ -129,12 +160,16 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
 
     setTransactions(mockTransactions);
 
-    // Mock visitor data
-    const mockVisitors: Visitor[] = Array.from({ length: 10 }, (_, i) => ({
+    // Mock visitor data with country information
+    const countries = ['United States', 'United Kingdom', 'Canada', 'Germany', 'Japan', 'Australia', 'Brazil', 'India'];
+    const pages = ['/', '/models', '/success', '/admin'];
+    
+    const mockVisitors: Visitor[] = Array.from({ length: 20 }, (_, i) => ({
       id: `visitor-${i+1}`,
       timestamp: Date.now() - (i * 900000),
-      page: ['/', '/models', '/success'][Math.floor(Math.random() * 3)],
-      referrer: Math.random() > 0.5 ? 'google.com' : null
+      page: pages[Math.floor(Math.random() * pages.length)],
+      referrer: Math.random() > 0.5 ? ['google.com', 'facebook.com', 'twitter.com'][Math.floor(Math.random() * 3)] : null,
+      country: countries[Math.floor(Math.random() * countries.length)]
     }));
 
     setVisitors(mockVisitors);
@@ -177,6 +212,53 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
     return new Date(timestamp).toLocaleString();
   };
 
+  // Calculate analytics data
+  const totalVisits = visitors.length;
+  
+  const visitorsByPage = visitors.reduce((acc: Record<string, number>, visitor) => {
+    acc[visitor.page] = (acc[visitor.page] || 0) + 1;
+    return acc;
+  }, {});
+  
+  const pageVisitsData = Object.keys(visitorsByPage).map(page => ({
+    name: page,
+    visits: visitorsByPage[page]
+  }));
+
+  const visitorsByCountry = visitors.reduce((acc: Record<string, number>, visitor) => {
+    acc[visitor.country] = (acc[visitor.country] || 0) + 1;
+    return acc;
+  }, {});
+  
+  const countryData = Object.keys(visitorsByCountry).map(country => ({
+    name: country,
+    value: visitorsByCountry[country]
+  }));
+
+  // Group visitors by day for timeline chart
+  const today = new Date();
+  const last7Days = Array.from({length: 7}, (_, i) => {
+    const date = new Date();
+    date.setDate(today.getDate() - (6 - i));
+    return date.toLocaleDateString('en-US', { weekday: 'short' });
+  });
+
+  const visitorsByDay: Record<string, number> = {};
+  last7Days.forEach(day => { visitorsByDay[day] = 0 });
+
+  visitors.forEach(visitor => {
+    const visitDate = new Date(visitor.timestamp);
+    const dayName = visitDate.toLocaleDateString('en-US', { weekday: 'short' });
+    if (last7Days.includes(dayName)) {
+      visitorsByDay[dayName] = (visitorsByDay[dayName] || 0) + 1;
+    }
+  });
+
+  const dailyVisitsData = last7Days.map(day => ({
+    name: day,
+    visits: visitorsByDay[day]
+  }));
+
   return (
     <div className="p-4 space-y-6">
       <div className="flex justify-between items-center">
@@ -187,10 +269,181 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
       </div>
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-6">
-          <TabsTrigger value="payments">Payment Verification</TabsTrigger>
-          <TabsTrigger value="visitors">Site Visitors</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3 mb-6">
+          <TabsTrigger value="overview" className="flex items-center gap-2">
+            <ChartBar className="h-4 w-4" />
+            Overview
+          </TabsTrigger>
+          <TabsTrigger value="payments" className="flex items-center gap-2">
+            <Check className="h-4 w-4" />
+            Payment Verification
+          </TabsTrigger>
+          <TabsTrigger value="visitors" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Site Visitors
+          </TabsTrigger>
         </TabsList>
+        
+        <TabsContent value="overview" className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="tech-card">
+              <CardHeader className="pb-2">
+                <CardTitle>Total Visitors</CardTitle>
+                <CardDescription>All time site visits</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <div className="text-3xl font-bold text-tech-blue">{totalVisits}</div>
+                  <Users className="h-8 w-8 text-tech-blue/60" />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="tech-card">
+              <CardHeader className="pb-2">
+                <CardTitle>Pending Payments</CardTitle>
+                <CardDescription>Awaiting verification</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <div className="text-3xl font-bold text-tech-blue">
+                    {transactions.filter(tx => tx.status === 'pending').length}
+                  </div>
+                  <Check className="h-8 w-8 text-tech-blue/60" />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="tech-card">
+              <CardHeader className="pb-2">
+                <CardTitle>Top Country</CardTitle>
+                <CardDescription>Most visitors from</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <div className="text-xl font-bold text-tech-blue">
+                    {countryData.length > 0 ? 
+                      countryData.sort((a, b) => b.value - a.value)[0].name : 
+                      'No data'}
+                  </div>
+                  <Globe className="h-8 w-8 text-tech-blue/60" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card className="tech-card">
+              <CardHeader>
+                <CardTitle>Daily Visits</CardTitle>
+                <CardDescription>Last 7 days</CardDescription>
+              </CardHeader>
+              <CardContent className="h-80">
+                <ChartContainer config={{ visits: { theme: { light: '#9b87f5', dark: '#9b87f5' } } }}>
+                  <AreaChart data={dailyVisitsData}>
+                    <defs>
+                      <linearGradient id="colorVisits" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#9b87f5" stopOpacity={0.8}/>
+                        <stop offset="95%" stopColor="#9b87f5" stopOpacity={0.2}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1A1F2C" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip content={(props) => (
+                      <div className="bg-tech-dark border border-tech-blue/20 p-2 rounded shadow">
+                        {props.payload?.length > 0 && (
+                          <div>
+                            <p className="text-tech-blue font-medium">{props.label}</p>
+                            <p className="text-white">
+                              Visits: {props.payload[0].value}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )} />
+                    <Area 
+                      type="monotone" 
+                      dataKey="visits" 
+                      stroke="#9b87f5" 
+                      fillOpacity={1} 
+                      fill="url(#colorVisits)" 
+                    />
+                  </AreaChart>
+                </ChartContainer>
+              </CardContent>
+            </Card>
+            
+            <Card className="tech-card">
+              <CardHeader>
+                <CardTitle>Visitor Countries</CardTitle>
+                <CardDescription>Location distribution</CardDescription>
+              </CardHeader>
+              <CardContent className="h-80">
+                <ChartContainer config={{ visits: { theme: { light: '#9b87f5', dark: '#9b87f5' } } }}>
+                  <PieChart>
+                    <Pie
+                      data={countryData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    >
+                      {countryData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip content={(props) => (
+                      <div className="bg-tech-dark border border-tech-blue/20 p-2 rounded shadow">
+                        {props.payload?.length > 0 && (
+                          <div>
+                            <p className="text-tech-blue font-medium">{props.payload[0].name}</p>
+                            <p className="text-white">
+                              Visitors: {props.payload[0].value}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )} />
+                    <Legend />
+                  </PieChart>
+                </ChartContainer>
+              </CardContent>
+            </Card>
+          </div>
+          
+          <Card className="tech-card">
+            <CardHeader>
+              <CardTitle>Page Popularity</CardTitle>
+              <CardDescription>Visits by page</CardDescription>
+            </CardHeader>
+            <CardContent className="h-80">
+              <ChartContainer config={{ visits: { theme: { light: '#9b87f5', dark: '#9b87f5' } } }}>
+                <BarChart data={pageVisitsData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1A1F2C" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip content={(props) => (
+                    <div className="bg-tech-dark border border-tech-blue/20 p-2 rounded shadow">
+                      {props.payload?.length > 0 && (
+                        <div>
+                          <p className="text-tech-blue font-medium">{props.label}</p>
+                          <p className="text-white">
+                            Visits: {props.payload[0].value}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )} />
+                  <Bar dataKey="visits" fill="#9b87f5" />
+                </BarChart>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+        </TabsContent>
         
         <TabsContent value="payments" className="space-y-4">
           <div className="tech-card">
@@ -264,6 +517,7 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
                 <TableRow>
                   <TableHead>Time</TableHead>
                   <TableHead>Page</TableHead>
+                  <TableHead>Country</TableHead>
                   <TableHead>Referrer</TableHead>
                 </TableRow>
               </TableHeader>
@@ -272,6 +526,7 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
                   <TableRow key={visitor.id}>
                     <TableCell>{formatDate(visitor.timestamp)}</TableCell>
                     <TableCell>{visitor.page}</TableCell>
+                    <TableCell>{visitor.country}</TableCell>
                     <TableCell>{visitor.referrer || 'Direct'}</TableCell>
                   </TableRow>
                 ))}
@@ -296,7 +551,8 @@ const Admin: React.FC = () => {
         id: `visit-${Date.now()}`,
         timestamp: Date.now(),
         page: '/admin',
-        referrer: document.referrer || null
+        referrer: document.referrer || null,
+        country: 'Admin Location' // In a real app, you would use an IP geolocation service
       };
       
       localStorage.setItem('site_visits', JSON.stringify([...currentVisits, newVisit]));
