@@ -36,7 +36,7 @@ export const initializeUSDTPayment = (details: CryptoPaymentDetails) => {
   // Try to store in Supabase as well
   (async () => {
     try {
-      await supabase
+      const { error } = await supabase
         .from('transactions')
         .insert([{
           tx_id: txId,
@@ -46,6 +46,12 @@ export const initializeUSDTPayment = (details: CryptoPaymentDetails) => {
           status: 'pending',
           payment_method: 'USDT'
         }]);
+        
+      if (error) {
+        console.error("Error storing transaction in Supabase:", error);
+        // This is fine, we'll use localStorage as fallback
+        toast.error("Error saving to database, using local storage as fallback");
+      }
     } catch (error) {
       console.error("Error storing transaction in Supabase:", error);
       // This is fine, we'll use localStorage as fallback
@@ -78,7 +84,7 @@ export const verifyUSDTTransaction = async (txId: string): Promise<boolean> => {
       .from('transactions')
       .select('status')
       .eq('tx_id', txId)
-      .single();
+      .maybeSingle();
       
     if (!error && data && data.status === 'completed') {
       // Transaction is already verified in Supabase
@@ -108,7 +114,7 @@ export const verifyUSDTTransaction = async (txId: string): Promise<boolean> => {
     
     // If not verified in Supabase, simulate verification for demo
     // In a real app, you would check with a blockchain API
-    return new Promise((resolve) => {
+    return new Promise<boolean>((resolve) => {
       setTimeout(() => {
         // 20% chance of success for demo purposes (since we want admin to verify most transactions)
         const isVerified = Math.random() < 0.2;

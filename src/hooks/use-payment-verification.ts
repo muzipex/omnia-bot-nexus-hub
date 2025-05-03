@@ -21,7 +21,7 @@ export const usePaymentVerification = (transactionId?: string) => {
           .from('transactions')
           .select('*')
           .eq('tx_id', transactionId)
-          .single();
+          .maybeSingle();
 
         if (error) {
           console.error("Error fetching transaction from Supabase:", error);
