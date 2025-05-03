@@ -1,7 +1,7 @@
 
 import React, { useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Download, CheckCircle, Clock } from 'lucide-react';
+import { Download, CheckCircle, Clock, Wifi, WifiOff } from 'lucide-react';
 import { useDownloadState } from '@/hooks/use-download-state';
 import SEO from '../components/SEO';
 import Breadcrumbs from '../components/Breadcrumbs';
@@ -12,7 +12,7 @@ const Success: React.FC = () => {
   const urlParams = new URLSearchParams(window.location.search);
   const paymentPending = urlParams.get('payment_pending') === 'true';
   const transactionId = urlParams.get('txId') || undefined;
-  const { isVerified, isLoading } = usePaymentVerification(transactionId);
+  const { isVerified, isLoading, connectionStatus } = usePaymentVerification(transactionId);
 
   useEffect(() => {
     console.log('Purchase conversion completed');
@@ -32,6 +32,22 @@ const Success: React.FC = () => {
 
       <div className="min-h-screen bg-tech-dark grid place-items-center p-4">
         <Breadcrumbs className="absolute top-4 left-4 text-sm" />
+        
+        {/* Connection status indicator */}
+        <div className="absolute top-4 right-4">
+          {connectionStatus === 'connected' ? (
+            <div className="flex items-center gap-2 text-tech-green text-sm">
+              <Wifi className="w-4 h-4" />
+              <span>Online</span>
+            </div>
+          ) : connectionStatus === 'offline' ? (
+            <div className="flex items-center gap-2 text-amber-400 text-sm">
+              <WifiOff className="w-4 h-4" />
+              <span>Offline Mode</span>
+            </div>
+          ) : null}
+        </div>
+        
         <div className="max-w-md w-full tech-card text-center space-y-6" role="main">
           {paymentPending ? (
             <>
@@ -55,6 +71,16 @@ const Success: React.FC = () => {
                     <li>Follow the setup guide in your welcome email</li>
                   </ol>
                 </div>
+                
+                {connectionStatus === 'offline' && (
+                  <div className="bg-amber-500/10 rounded-lg p-4 border border-amber-500/20">
+                    <h2 className="text-amber-400 font-bold mb-2">Offline Mode Active</h2>
+                    <p className="text-gray-300 text-sm">
+                      Your transaction is saved locally. It will sync to our servers when your connection is restored. 
+                      You can still use the app normally.
+                    </p>
+                  </div>
+                )}
               </div>
               
               <Button 
@@ -98,6 +124,16 @@ const Success: React.FC = () => {
                     <li>Connect to your trading account</li>
                   </ol>
                 </div>
+                
+                {connectionStatus === 'offline' && (
+                  <div className="bg-amber-500/10 rounded-lg p-4 border border-amber-500/20">
+                    <h2 className="text-amber-400 font-bold mb-2">Offline Mode Active</h2>
+                    <p className="text-gray-300 text-sm">
+                      You're currently in offline mode. Your license is validated locally. 
+                      Your full access will sync when you're back online.
+                    </p>
+                  </div>
+                )}
               </div>
               
               <Button 

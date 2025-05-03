@@ -146,7 +146,7 @@ export const verifyUSDTTransaction = async (txId: string): Promise<boolean> => {
                 localStorage.setItem('verified_transactions', JSON.stringify(verifiedTransactions));
               }
             })
-            .catch((error) => {
+            .catch((error: any) => {
               console.error("Error updating transaction status in Supabase:", error);
             });
         }

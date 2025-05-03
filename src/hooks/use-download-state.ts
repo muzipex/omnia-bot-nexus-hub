@@ -1,17 +1,35 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 
 export const useDownloadState = () => {
   const [hasPaid, setHasPaid] = useState(false);
   const [isCheckingPayment, setIsCheckingPayment] = useState(true);
+  const [connectionStatus, setConnectionStatus] = useState<'connected' | 'offline' | 'checking'>('checking');
+
+  // Function to check database connection
+  const checkDbConnection = useCallback(async (): Promise<boolean> => {
+    try {
+      const { error } = await supabase.from('transactions').select('count').limit(1);
+      const isConnected = !error;
+      setConnectionStatus(isConnected ? 'connected' : 'offline');
+      return isConnected;
+    } catch (error) {
+      console.error("Database connection error:", error);
+      setConnectionStatus('offline');
+      return false;
+    }
+  }, []);
 
   useEffect(() => {
     const checkPaymentStatus = async () => {
       setIsCheckingPayment(true);
       
       try {
+        // Check database connection first
+        const isConnected = await checkDbConnection();
+        
         // Check URL parameters for payment success
         const urlParams = new URLSearchParams(window.location.search);
         const paymentSuccess = urlParams.get('payment_success');
@@ -27,7 +45,7 @@ export const useDownloadState = () => {
         
         // Check if there's a transaction ID in URL params
         const txId = urlParams.get('txId');
-        if (txId) {
+        if (txId && isConnected) {
           // Check if this transaction is verified in Supabase
           const { data, error } = await supabase
             .from('transactions')
@@ -59,18 +77,20 @@ export const useDownloadState = () => {
           return;
         }
         
-        // Check if any verified transactions exist in Supabase
-        const { data: transactions } = await supabase
-          .from('transactions')
-          .select('tx_id')
-          .eq('status', 'completed')
-          .limit(1);
-          
-        if (transactions && transactions.length > 0) {
-          setHasPaid(true);
-          localStorage.setItem('omniabot_payment_verified', 'true');
-          setIsCheckingPayment(false);
-          return;
+        if (isConnected) {
+          // Check if any verified transactions exist in Supabase
+          const { data: transactions } = await supabase
+            .from('transactions')
+            .select('tx_id')
+            .eq('status', 'completed')
+            .limit(1);
+            
+          if (transactions && transactions.length > 0) {
+            setHasPaid(true);
+            localStorage.setItem('omniabot_payment_verified', 'true');
+            setIsCheckingPayment(false);
+            return;
+          }
         }
         
         // Also check if any of the user's transactions have been verified in localStorage
@@ -105,25 +125,47 @@ export const useDownloadState = () => {
     
     checkPaymentStatus();
     
-    // Set up real-time updates for transactions
-    const channel = supabase
-      .channel('payment-verified')
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'transactions',
-        filter: 'status=eq.completed'
-      }, () => {
-        // When any transaction is verified, update the payment status
-        setHasPaid(true);
-        localStorage.setItem('omniabot_payment_verified', 'true');
-      })
-      .subscribe();
+    // Set up real-time updates for transactions if connected
+    let channel: any;
+    
+    const setupRealtimeSubscription = async () => {
+      const isConnected = await checkDbConnection();
+      
+      if (isConnected) {
+        channel = supabase
+          .channel('payment-verified')
+          .on('postgres_changes', {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'transactions',
+            filter: 'status=eq.completed'
+          }, () => {
+            // When any transaction is verified, update the payment status
+            setHasPaid(true);
+            localStorage.setItem('omniabot_payment_verified', 'true');
+          })
+          .subscribe();
+      }
+    };
+    
+    setupRealtimeSubscription();
+    
+    // Periodically check connection and resubscribe if needed
+    const connectionInterval = setInterval(() => {
+      checkDbConnection().then(isConnected => {
+        if (isConnected && !channel) {
+          setupRealtimeSubscription();
+        }
+      });
+    }, 30000); // Check every 30 seconds
       
     return () => {
-      supabase.removeChannel(channel);
+      clearInterval(connectionInterval);
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
     };
-  }, []);
+  }, [checkDbConnection]);
 
   const handleDownload = () => {
     if (hasPaid) {
@@ -140,6 +182,7 @@ export const useDownloadState = () => {
   return {
     hasPaid,
     isCheckingPayment,
-    handleDownload
+    handleDownload,
+    connectionStatus
   };
 };
