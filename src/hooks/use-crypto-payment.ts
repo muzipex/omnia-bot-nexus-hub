@@ -26,24 +26,29 @@ export const useCryptoPayment = () => {
       }
 
       // Store the transaction in Supabase for persistent access
-      const { error } = await supabase
-        .from('transactions')
-        .insert([{
-          tx_id: existingTx.txId,
-          plan_id: existingTx.planId,
-          price: existingTx.price,
-          name: existingTx.name,
-          timestamp: new Date(existingTx.timestamp).toISOString(),
-          status: 'pending',
-          payment_method: 'USDT'
-        }]);
+      try {
+        const { error } = await supabase
+          .from('transactions')
+          .insert([{
+            tx_id: existingTx.txId,
+            plan_id: existingTx.planId,
+            price: existingTx.price,
+            name: existingTx.name,
+            timestamp: new Date(existingTx.timestamp).toISOString(),
+            status: 'pending',
+            payment_method: 'USDT'
+          }]);
 
-      if (error) {
-        console.error("Error saving transaction to Supabase:", error);
-        // If Supabase fails, continue with localStorage as fallback
+        if (error) {
+          console.error("Error saving transaction to Supabase:", error);
+          // If Supabase fails, continue with localStorage as fallback
+          toast.error("Error saving to database, using local storage as fallback");
+        } else {
+          toast.success("Transaction submitted for admin verification!");
+        }
+      } catch (error) {
+        console.error("Transaction submission error:", error);
         toast.error("Error saving to database, using local storage as fallback");
-      } else {
-        toast.success("Transaction submitted for admin verification!");
       }
       
       // Navigate to a thank you page

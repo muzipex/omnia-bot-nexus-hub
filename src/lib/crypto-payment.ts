@@ -49,6 +49,7 @@ export const initializeUSDTPayment = (details: CryptoPaymentDetails) => {
     } catch (error) {
       console.error("Error storing transaction in Supabase:", error);
       // This is fine, we'll use localStorage as fallback
+      toast.error("Error saving to database, using local storage as fallback");
     }
   })();
   
