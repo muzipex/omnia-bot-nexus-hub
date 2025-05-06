@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef } from 'react';
 
 const MatrixCandleStickBackground: React.FC = () => {
@@ -22,257 +23,337 @@ const MatrixCandleStickBackground: React.FC = () => {
     // Handle window resize
     window.addEventListener('resize', resizeCanvas);
     
-    // Market structure parameters
-    const candleWidth = 8;
-    const gap = 4;
-    const columns = Math.ceil(canvas.width / (candleWidth + gap));
+    // Futuristic grid setup
+    const gridSize = 40;
+    const mainGridLineWidth = 1;
+    const subGridLineWidth = 0.3;
+    const numberOfParticles = 80;
     
-    // Create separate price channels for more realistic market structure
-    const priceChannels = [];
-    const channelCount = 5;
+    // Particle properties
+    const particles: {
+      x: number;
+      y: number;
+      size: number;
+      speedX: number;
+      speedY: number;
+      color: string;
+      alpha: number;
+      fadeSpeed: number;
+      pulseSpeed: number;
+      pulseMagnitude: number;
+      timeOffset: number;
+    }[] = [];
     
-    for (let c = 0; c < channelCount; c++) {
-      const startX = Math.random() * canvas.width;
-      const channelHeight = canvas.height / channelCount;
-      const baseY = c * channelHeight + channelHeight / 2;
-      const trend = Math.random() > 0.5 ? 'uptrend' : 'downtrend';
-      const volatility = 0.5 + Math.random() * 2;
-      const speed = 0.3 + Math.random() * 0.7;
-      
-      priceChannels.push({
-        startX,
-        baseY,
-        trend,
-        volatility,
-        speed,
-        lastPrice: baseY,
-        priceHistory: [],
-        trendPhase: 0,
-        trendDuration: 200 + Math.random() * 300,
-        supportLevel: baseY + 30 + Math.random() * 20,
-        resistanceLevel: baseY - 30 - Math.random() * 20
+    // Create data flow lines
+    const dataFlows: {
+      startX: number;
+      startY: number;
+      endX: number;
+      endY: number;
+      speed: number;
+      progress: number;
+      color: string;
+      width: number;
+      lifetime: number;
+      currentLife: number;
+    }[] = [];
+    
+    // Color themes with glowing effect
+    const colors = {
+      primaryBlue: '#1EAEDB',
+      accentPurple: '#8B5CF6',
+      accentMagenta: '#D946EF',
+      accentCyan: '#0ea5e9',
+      neonGreen: '#00FF41',
+      background: 'rgba(10, 12, 21, 0.1)',
+      gridLines: 'rgba(30, 174, 219, 0.15)',
+      subGridLines: 'rgba(30, 174, 219, 0.05)',
+    };
+    
+    // Initialize particles
+    for (let i = 0; i < numberOfParticles; i++) {
+      const colorOptions = [colors.primaryBlue, colors.accentPurple, colors.accentCyan, colors.neonGreen, colors.accentMagenta];
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        size: 0.5 + Math.random() * 3.5,
+        speedX: (Math.random() - 0.5) * 0.8,
+        speedY: (Math.random() - 0.5) * 0.8,
+        color: colorOptions[Math.floor(Math.random() * colorOptions.length)],
+        alpha: 0.1 + Math.random() * 0.9,
+        fadeSpeed: 0.001 + Math.random() * 0.005,
+        pulseSpeed: 0.01 + Math.random() * 0.05,
+        pulseMagnitude: 0.5 + Math.random() * 1.5,
+        timeOffset: Math.random() * Math.PI * 2
       });
     }
     
-    const candlesticks: {
-      x: number;
-      open: number;
-      close: number;
-      high: number;
-      low: number;
-      isUp: boolean;
-      channelIndex: number;
-      opacity: number;
-      age: number;
-      maxAge: number;
-      fadeSpeed: number;
-    }[] = [];
-    
-    // Initialize candlesticks in each channel
-    priceChannels.forEach((channel, channelIndex) => {
-      const candles = Math.ceil(columns / channelCount);
+    // Function to create new data flow line
+    const createDataFlow = () => {
+      // Choose random starting position from top or sides
+      const startSide = Math.floor(Math.random() * 3); // 0: top, 1: left, 2: right
+      let startX, startY, endX, endY;
       
-      for (let i = 0; i < candles; i++) {
-        const x = channel.startX + i * (candleWidth + gap);
-        if (x > canvas.width) continue;
-        
-        const price = channel.baseY;
-        const open = price;
-        const close = price + (Math.random() * 20 - 10);
-        const high = Math.max(open, close) + Math.random() * 10;
-        const low = Math.min(open, close) - Math.random() * 10;
-        const isUp = close > open;
-        
-        candlesticks.push({
-          x,
-          open,
-          close,
-          high,
-          low,
-          isUp,
-          channelIndex,
-          opacity: 0.5 + Math.random() * 0.5,
-          age: 0,
-          maxAge: 300 + Math.random() * 300,
-          fadeSpeed: 0.01 + Math.random() * 0.01
-        });
+      switch(startSide) {
+        case 0: // Top
+          startX = Math.random() * canvas.width;
+          startY = -10;
+          endX = Math.random() * canvas.width;
+          endY = canvas.height + 10;
+          break;
+        case 1: // Left
+          startX = -10;
+          startY = Math.random() * canvas.height;
+          endX = canvas.width + 10;
+          endY = Math.random() * canvas.height;
+          break;
+        default: // Right
+          startX = canvas.width + 10;
+          startY = Math.random() * canvas.height;
+          endX = -10;
+          endY = Math.random() * canvas.height;
+          break;
       }
-    });
+      
+      // Choose color based on pattern
+      const colorOptions = [colors.primaryBlue, colors.accentPurple, colors.accentCyan, colors.neonGreen];
+      
+      dataFlows.push({
+        startX,
+        startY,
+        endX,
+        endY,
+        speed: 0.002 + Math.random() * 0.004,
+        progress: 0,
+        color: colorOptions[Math.floor(Math.random() * colorOptions.length)],
+        width: 1 + Math.random() * 2.5,
+        lifetime: 100 + Math.random() * 150,
+        currentLife: 0
+      });
+    };
     
     // Animation loop
     const animate = () => {
       // Create dim transparent background for trail effect
-      ctx.fillStyle = 'rgba(10, 12, 21, 0.1)';
+      ctx.fillStyle = colors.background;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       
-      // Update price channels
-      priceChannels.forEach((channel, index) => {
-        channel.trendPhase++;
-        
-        // Change trend periodically to create support/resistance patterns
-        if (channel.trendPhase > channel.trendDuration) {
-          channel.trend = channel.trend === 'uptrend' ? 'downtrend' : 'uptrend';
-          channel.trendPhase = 0;
-          channel.trendDuration = 200 + Math.random() * 300;
-          
-          // Update support/resistance levels based on recent price action
-          if (channel.trend === 'uptrend') {
-            channel.resistanceLevel = channel.lastPrice - 20 - Math.random() * 30;
-          } else {
-            channel.supportLevel = channel.lastPrice + 20 + Math.random() * 30;
-          }
+      // Draw grid
+      const gridOffsetX = canvas.width / 2 % gridSize;
+      const gridOffsetY = canvas.height / 2 % gridSize;
+      
+      // Draw sub-grid
+      ctx.strokeStyle = colors.subGridLines;
+      ctx.lineWidth = subGridLineWidth;
+      
+      for (let x = gridOffsetX; x < canvas.width; x += gridSize / 4) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+      }
+      
+      for (let y = gridOffsetY; y < canvas.height; y += gridSize / 4) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+      }
+      
+      // Draw main grid
+      ctx.strokeStyle = colors.gridLines;
+      ctx.lineWidth = mainGridLineWidth;
+      
+      for (let x = gridOffsetX; x < canvas.width; x += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+      }
+      
+      for (let y = gridOffsetY; y < canvas.height; y += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+      }
+      
+      // Create new data flows randomly
+      if (Math.random() < 0.05 && dataFlows.length < 15) {
+        createDataFlow();
+      }
+      
+      // Update and draw data flows
+      dataFlows.forEach((flow, i) => {
+        flow.currentLife++;
+        if (flow.currentLife > flow.lifetime) {
+          // Remove old flows
+          dataFlows.splice(i, 1);
+          return;
         }
         
-        // Calculate next price based on trend
-        let priceMove;
-        
-        if (channel.trend === 'uptrend') {
-          // In uptrend, move towards resistance with momentum
-          const distToResistance = Math.abs(channel.lastPrice - channel.resistanceLevel);
-          if (distToResistance < 15) {
-            // Near resistance - higher chance of reversal
-            priceMove = Math.random() > 0.7 ? -channel.volatility : channel.volatility * 0.5;
-          } else {
-            // Normal uptrend movement
-            priceMove = (Math.random() * channel.volatility * 2) - (channel.volatility * 0.8);
-          }
-        } else {
-          // In downtrend, move towards support with momentum
-          const distToSupport = Math.abs(channel.lastPrice - channel.supportLevel);
-          if (distToSupport < 15) {
-            // Near support - higher chance of reversal
-            priceMove = Math.random() > 0.7 ? channel.volatility : -channel.volatility * 0.5;
-          } else {
-            // Normal downtrend movement
-            priceMove = (Math.random() * channel.volatility * 2) - (channel.volatility * 1.2);
-          }
+        // Calculate alpha based on lifetime
+        let alpha = 1;
+        if (flow.currentLife < 20) {
+          alpha = flow.currentLife / 20;
+        } else if (flow.currentLife > flow.lifetime - 20) {
+          alpha = (flow.lifetime - flow.currentLife) / 20;
         }
         
-        // Update price
-        channel.lastPrice += priceMove;
-        
-        // Keep price within reasonable channel bounds to prevent extreme movements
-        const midPoint = (channel.supportLevel + channel.resistanceLevel) / 2;
-        const maxDeviation = Math.abs(channel.supportLevel - channel.resistanceLevel);
-        
-        if (Math.abs(channel.lastPrice - midPoint) > maxDeviation) {
-          channel.lastPrice = midPoint + (priceMove > 0 ? 1 : -1) * (maxDeviation * 0.9);
+        // Update progress
+        flow.progress += flow.speed;
+        if (flow.progress > 1) {
+          flow.progress = 1;
         }
         
-        // Store price for history
-        channel.priceHistory.push(channel.lastPrice);
-        if (channel.priceHistory.length > 100) {
-          channel.priceHistory.shift();
-        }
+        // Calculate current position
+        const currentX = flow.startX + (flow.endX - flow.startX) * flow.progress;
+        const currentY = flow.startY + (flow.endY - flow.startY) * flow.progress;
         
-        // Occasionally draw support/resistance lines
-        if (Math.random() < 0.01) {
-          ctx.globalAlpha = 0.1;
-          ctx.strokeStyle = '#1EAEDB';
-          ctx.beginPath();
-          ctx.moveTo(0, channel.resistanceLevel);
-          ctx.lineTo(canvas.width * 0.3, channel.resistanceLevel);
-          ctx.stroke();
-          
-          ctx.strokeStyle = '#1EAEDB';
-          ctx.beginPath();
-          ctx.moveTo(0, channel.supportLevel);
-          ctx.lineTo(canvas.width * 0.3, channel.supportLevel);
-          ctx.stroke();
-        }
+        // Draw illuminating point at the flow head
+        ctx.globalAlpha = alpha;
+        const gradient = ctx.createRadialGradient(
+          currentX, currentY, 0, 
+          currentX, currentY, 70
+        );
+        gradient.addColorStop(0, flow.color);
+        gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
         
-        // Occasionally draw trend lines
-        if (Math.random() < 0.005 && channel.priceHistory.length > 30) {
-          ctx.globalAlpha = 0.15;
-          ctx.strokeStyle = channel.trend === 'uptrend' ? '#00FF41' : '#ea384c';
-          ctx.beginPath();
-          
-          const startIndex = channel.priceHistory.length - 30;
-          ctx.moveTo(0, channel.priceHistory[startIndex]);
-          
-          for (let i = 1; i < 30; i++) {
-            ctx.lineTo(i * 5, channel.priceHistory[startIndex + i]);
-          }
-          ctx.stroke();
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(currentX, currentY, 70, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Draw line
+        ctx.strokeStyle = flow.color;
+        ctx.lineWidth = flow.width;
+        ctx.beginPath();
+        ctx.moveTo(flow.startX, flow.startY);
+        ctx.lineTo(currentX, currentY);
+        ctx.stroke();
+        
+        // Create particles at flow head occasionally
+        if (Math.random() < 0.2) {
+          const particleColor = flow.color;
+          particles.push({
+            x: currentX,
+            y: currentY,
+            size: 1 + Math.random() * 3,
+            speedX: (Math.random() - 0.5) * 2,
+            speedY: (Math.random() - 0.5) * 2,
+            color: particleColor,
+            alpha: 0.6 + Math.random() * 0.4,
+            fadeSpeed: 0.005 + Math.random() * 0.01,
+            pulseSpeed: 0.02 + Math.random() * 0.08,
+            pulseMagnitude: 0.5 + Math.random() * 1,
+            timeOffset: Math.random() * Math.PI * 2
+          });
         }
       });
       
-      // Update and draw candlesticks
-      candlesticks.forEach((candle, i) => {
-        // Increase age
-        candle.age++;
+      // Update and draw particles
+      ctx.globalAlpha = 1;
+      particles.forEach((particle, i) => {
+        // Update position
+        particle.x += particle.speedX;
+        particle.y += particle.speedY;
         
-        // Fade out old candles
-        if (candle.age > candle.maxAge * 0.7) {
-          candle.opacity -= candle.fadeSpeed;
+        // Contain particles within canvas
+        if (particle.x < 0 || particle.x > canvas.width) particle.speedX *= -0.9;
+        if (particle.y < 0 || particle.y > canvas.height) particle.speedY *= -0.9;
+        
+        // Fade out
+        particle.alpha -= particle.fadeSpeed;
+        
+        // Pulsating effect
+        const pulseSize = particle.size + Math.sin(Date.now() * particle.pulseSpeed + particle.timeOffset) * particle.pulseMagnitude;
+        
+        // Remove faded particles
+        if (particle.alpha <= 0) {
+          particles.splice(i, 1);
+          return;
         }
         
-        // Reset candles that are too old or faded out
-        if (candle.age > candle.maxAge || candle.opacity <= 0) {
-          const channel = priceChannels[candle.channelIndex];
-          const open = channel.lastPrice;
-          const close = open + (Math.random() * 16 - 8);
-          const high = Math.max(open, close) + Math.random() * 8;
-          const low = Math.min(open, close) - Math.random() * 8;
-          
-          candle.x -= canvas.width * 1.1;
-          if (candle.x < -candleWidth) {
-            candle.x = canvas.width + Math.random() * 50;
-          }
-          
-          candle.open = open;
-          candle.close = close;
-          candle.high = high;
-          candle.low = low;
-          candle.isUp = close > open;
-          candle.opacity = 0.5 + Math.random() * 0.5;
-          candle.age = 0;
-          candle.maxAge = 300 + Math.random() * 300;
-        }
+        // Draw particle
+        ctx.globalAlpha = particle.alpha;
+        ctx.fillStyle = particle.color;
+        ctx.beginPath();
+        ctx.arc(particle.x, particle.y, pulseSize, 0, Math.PI * 2);
+        ctx.fill();
         
-        // Draw candle
-        const color = candle.isUp ? '#00FF41' : '#ea384c';
-        ctx.fillStyle = color;
-        ctx.strokeStyle = color;
-        ctx.globalAlpha = candle.opacity;
-        
-        // Draw price action patterns
-        const candleBody = Math.abs(candle.close - candle.open);
-        const wickTop = candle.isUp ? candle.close : candle.open;
-        const wickBottom = candle.isUp ? candle.open : candle.close;
-        
-        // Draw candle body
-        ctx.fillRect(
-          candle.x, 
-          candle.isUp ? candle.close : candle.open, 
-          candleWidth, 
-          candleBody || 1
+        // Draw glow effect
+        const glow = ctx.createRadialGradient(
+          particle.x, particle.y, 0, 
+          particle.x, particle.y, pulseSize * 2.5
         );
+        glow.addColorStop(0, `${particle.color}80`); // 50% opacity
+        glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
         
-        // Draw top wick
+        ctx.fillStyle = glow;
         ctx.beginPath();
-        ctx.moveTo(candle.x + candleWidth / 2, wickTop);
-        ctx.lineTo(candle.x + candleWidth / 2, candle.high);
-        ctx.stroke();
-        
-        // Draw bottom wick
-        ctx.beginPath();
-        ctx.moveTo(candle.x + candleWidth / 2, wickBottom);
-        ctx.lineTo(candle.x + candleWidth / 2, candle.low);
-        ctx.stroke();
-        
-        // Occasionally draw volume bars below candles
-        if (Math.random() < 0.3) {
-          ctx.globalAlpha = candle.opacity * 0.4;
-          const volumeHeight = Math.random() * 20 + 5;
-          ctx.fillRect(
-            candle.x,
-            canvas.height - volumeHeight,
-            candleWidth,
-            volumeHeight
-          );
-        }
+        ctx.arc(particle.x, particle.y, pulseSize * 2.5, 0, Math.PI * 2);
+        ctx.fill();
       });
+      
+      // Occasionally create new particles
+      if (particles.length < numberOfParticles && Math.random() < 0.1) {
+        const colorOptions = [colors.primaryBlue, colors.accentPurple, colors.accentCyan, colors.neonGreen, colors.accentMagenta];
+        particles.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          size: 0.5 + Math.random() * 3.5,
+          speedX: (Math.random() - 0.5) * 0.8,
+          speedY: (Math.random() - 0.5) * 0.8,
+          color: colorOptions[Math.floor(Math.random() * colorOptions.length)],
+          alpha: 0.1 + Math.random() * 0.9,
+          fadeSpeed: 0.001 + Math.random() * 0.005,
+          pulseSpeed: 0.01 + Math.random() * 0.05,
+          pulseMagnitude: 0.5 + Math.random() * 1.5,
+          timeOffset: Math.random() * Math.PI * 2
+        });
+      }
+      
+      // Draw circular nodes at grid intersections occasionally
+      for (let x = gridOffsetX; x < canvas.width; x += gridSize) {
+        for (let y = gridOffsetY; y < canvas.height; y += gridSize) {
+          if (Math.random() < 0.001) {
+            const nodeSize = 3 + Math.random() * 5;
+            const nodeColor = Math.random() > 0.5 ? colors.accentPurple : colors.primaryBlue;
+            
+            ctx.globalAlpha = 0.7;
+            ctx.fillStyle = nodeColor;
+            ctx.beginPath();
+            ctx.arc(x, y, nodeSize, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw glow
+            const nodeGlow = ctx.createRadialGradient(x, y, 0, x, y, nodeSize * 3);
+            nodeGlow.addColorStop(0, `${nodeColor}90`);
+            nodeGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            
+            ctx.globalAlpha = 0.5;
+            ctx.fillStyle = nodeGlow;
+            ctx.beginPath();
+            ctx.arc(x, y, nodeSize * 3, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      }
+      
+      // Draw digital rain effect occasionally
+      if (Math.random() < 0.05) {
+        const startX = Math.random() * canvas.width;
+        const characters = "01010101010";
+        const fontSize = 14;
+        ctx.font = `${fontSize}px monospace`;
+        ctx.fillStyle = colors.neonGreen;
+        ctx.globalAlpha = 0.7;
+        
+        for (let i = 0; i < 10; i++) {
+          const char = characters.charAt(Math.floor(Math.random() * characters.length));
+          ctx.fillText(char, startX, i * fontSize);
+        }
+      }
       
       ctx.globalAlpha = 1;
       requestAnimationFrame(animate);
