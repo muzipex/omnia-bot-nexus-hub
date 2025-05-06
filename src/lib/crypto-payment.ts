@@ -60,11 +60,12 @@ export const initializeUSDTPayment = (details: CryptoPaymentDetails) => {
   })();
   
   // Copy address to clipboard
+  // Fix: Use a proper Promise chain to handle clipboard operations
   navigator.clipboard.writeText(USDT_ADDRESS)
     .then(() => {
       toast.success("USDT address copied to clipboard");
     })
-    .catch((error) => {
+    .catch((error: Error) => {
       console.error("Failed to copy address:", error);
       toast.error("Failed to copy address");
     });
