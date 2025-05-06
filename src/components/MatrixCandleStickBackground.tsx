@@ -24,7 +24,7 @@ const MatrixCandleStickBackground: React.FC = () => {
     window.addEventListener('resize', resizeCanvas);
     
     // Candlestick parameters
-    const candleWidth = 4;
+    const candleWidth = 6;
     const gap = 10;
     const columns = Math.ceil(canvas.width / (candleWidth + gap));
     const candlesticks: {
@@ -46,11 +46,9 @@ const MatrixCandleStickBackground: React.FC = () => {
     for (let i = 0; i < columns; i++) {
       const x = i * (candleWidth + gap);
       const isUp = Math.random() > 0.5;
-      const color = Math.random() > 0.7 
-        ? '#00FF41' // Green - 30% chance
-        : Math.random() > 0.5 
-          ? '#1EAEDB' // Blue - 35% chance
-          : '#8B5CF6'; // Purple - 35% chance
+      const color = isUp 
+        ? '#00FF41' // Green for up candles
+        : '#ea384c'; // Red for down candles
           
       candlesticks.push({
         x,
@@ -97,14 +95,8 @@ const MatrixCandleStickBackground: React.FC = () => {
           candle.height = 5 + Math.random() * 15;
           candle.speed = 0.5 + Math.random() * 2;
           candle.wickHeight = 8 + Math.random() * 20;
-          // Occasionally change color on reset
-          if (Math.random() > 0.7) {
-            candle.color = Math.random() > 0.6 
-              ? '#00FF41' 
-              : Math.random() > 0.5 
-                ? '#1EAEDB' 
-                : '#8B5CF6';
-          }
+          // Update color based on the new isUp value
+          candle.color = candle.isUp ? '#00FF41' : '#ea384c';
         }
         
         // Draw candlestick
