@@ -265,8 +265,9 @@ const MatrixCandleStickBackground: React.FC = () => {
         // Fade out
         particle.alpha -= particle.fadeSpeed;
         
-        // Pulsating effect
-        const pulseSize = particle.size + Math.sin(Date.now() * particle.pulseSpeed + particle.timeOffset) * particle.pulseMagnitude;
+        // Pulsating effect - FIX: Ensure pulseSize is always positive
+        const pulseEffect = Math.sin(Date.now() * particle.pulseSpeed + particle.timeOffset) * particle.pulseMagnitude;
+        const pulseSize = Math.max(0.1, particle.size + pulseEffect);
         
         // Remove faded particles
         if (particle.alpha <= 0) {
@@ -274,24 +275,25 @@ const MatrixCandleStickBackground: React.FC = () => {
           return;
         }
         
-        // Draw particle
+        // Draw particle - FIX: Ensure radius is positive
         ctx.globalAlpha = particle.alpha;
         ctx.fillStyle = particle.color;
         ctx.beginPath();
         ctx.arc(particle.x, particle.y, pulseSize, 0, Math.PI * 2);
         ctx.fill();
         
-        // Draw glow effect
+        // Draw glow effect - FIX: Ensure radius is positive
+        const glowSize = Math.max(0.1, pulseSize * 2.5);
         const glow = ctx.createRadialGradient(
           particle.x, particle.y, 0, 
-          particle.x, particle.y, pulseSize * 2.5
+          particle.x, particle.y, glowSize
         );
         glow.addColorStop(0, `${particle.color}80`); // 50% opacity
         glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
         
         ctx.fillStyle = glow;
         ctx.beginPath();
-        ctx.arc(particle.x, particle.y, pulseSize * 2.5, 0, Math.PI * 2);
+        ctx.arc(particle.x, particle.y, glowSize, 0, Math.PI * 2);
         ctx.fill();
       });
       
@@ -326,15 +328,16 @@ const MatrixCandleStickBackground: React.FC = () => {
             ctx.arc(x, y, nodeSize, 0, Math.PI * 2);
             ctx.fill();
             
-            // Draw glow
-            const nodeGlow = ctx.createRadialGradient(x, y, 0, x, y, nodeSize * 3);
+            // Draw glow - FIX: Ensure radius is positive
+            const nodeGlowSize = Math.max(0.1, nodeSize * 3);
+            const nodeGlow = ctx.createRadialGradient(x, y, 0, x, y, nodeGlowSize);
             nodeGlow.addColorStop(0, `${nodeColor}90`);
             nodeGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
             
             ctx.globalAlpha = 0.5;
             ctx.fillStyle = nodeGlow;
             ctx.beginPath();
-            ctx.arc(x, y, nodeSize * 3, 0, Math.PI * 2);
+            ctx.arc(x, y, nodeGlowSize, 0, Math.PI * 2);
             ctx.fill();
           }
         }
