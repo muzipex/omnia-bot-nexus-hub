@@ -116,10 +116,7 @@ const Pricing: React.FC = () => {
 
   // Notification function for unpaid download attempts
   const handleUnpaidDownload = () => {
-    toast({
-      description: "Please purchase the software before downloading.",
-      variant: "destructive"
-    });
+    toast.error("Please purchase the software before downloading.");
     
     // Scroll to pricing section
     document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });

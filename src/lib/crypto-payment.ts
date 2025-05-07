@@ -1,4 +1,3 @@
-
 import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -60,7 +59,6 @@ export const initializeUSDTPayment = (details: CryptoPaymentDetails) => {
   })();
   
   // Copy address to clipboard
-  // Fix: Use a Promise-based approach to handle clipboard operations
   try {
     // Fixed to properly handle the Promise
     navigator.clipboard.writeText(USDT_ADDRESS)
