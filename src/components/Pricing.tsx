@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Check, Zap, Download, Copy, Bitcoin } from 'lucide-react';
@@ -112,6 +113,18 @@ const Pricing: React.FC = () => {
       // Redirect to success page with transaction ID for verification
       navigate(`/success?payment_pending=true&txId=${cryptoTxId}`);
     }
+  };
+
+  // Notification function for unpaid download attempts
+  const handleUnpaidDownload = () => {
+    toast({
+      title: "Payment Required",
+      description: "Please purchase the software before downloading.",
+      variant: "destructive"
+    });
+    
+    // Scroll to pricing section
+    document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
   };
 
   // Always show download button if payment is made/verified
@@ -233,23 +246,21 @@ const Pricing: React.FC = () => {
                   </Button>
                 </div>
                 
-                {/* Always show the download button if user has paid or payment is verified */}
-                {(showDownloadButton || isLoading) && (
-                  <Button 
-                    className="w-full mt-4 bg-tech-blue hover:bg-tech-blue/90 text-white gap-2"
-                    onClick={handleDownload}
-                    disabled={isLoading && !hasPaid && !isVerified}
-                  >
-                    <Download className="w-4 h-4" />
-                    {isLoading ? "Verifying Payment..." : "Download Software"}
-                  </Button>
-                )}
+                {/* Show download button regardless of payment status */}
+                <Button 
+                  className="w-full mt-4 bg-tech-blue hover:bg-tech-blue/90 text-white gap-2"
+                  onClick={showDownloadButton ? handleDownload : handleUnpaidDownload}
+                  disabled={isLoading && !hasPaid && !isVerified}
+                >
+                  <Download className="w-4 h-4" />
+                  {isLoading ? "Verifying Payment..." : "Download Software"}
+                </Button>
               </div>
             ))}
           </div>
           
           <div className="mt-12 text-center max-w-xl mx-auto">
-            <p className="text-gray-400 text-sm">
+            <p className="text-gray-300 text-sm bg-tech-charcoal rounded-lg p-3 inline-block">
               All plans include a 30-day money-back guarantee. If you're not satisfied with the performance of Omnia BOT, we'll refund your purchase.
             </p>
           </div>

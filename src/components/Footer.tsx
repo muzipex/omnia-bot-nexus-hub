@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Rocket, Phone } from "lucide-react";
 import { Helmet } from 'react-helmet';
@@ -31,7 +32,7 @@ const Footer: React.FC = () => {
         </script>
       </Helmet>
 
-      <footer className="bg-tech-dark border-t border-tech-blue/20 py-12" role="contentinfo">
+      <footer className="bg-tech-dark border-t border-tech-blue/30 py-12" role="contentinfo">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             <div>
@@ -42,19 +43,19 @@ const Footer: React.FC = () => {
                 </div>
                 <h2 className="text-xl font-bold blue-glow-text">OMNIA BOT</h2>
               </div>
-              <p className="text-gray-400 mb-4">
+              <p className="text-gray-300 mb-4">
                 Next-generation algorithmic forex trading solution powered by advanced AI technology.
               </p>
             </div>
             
             <nav aria-labelledby="company-links">
-              <h3 id="company-links" className="text-white font-bold mb-4">Company</h3>
-              <ul className="space-y-2" role="list">
+              <h3 id="company-links" className="text-white font-bold mb-4 text-lg">Company</h3>
+              <ul className="space-y-3" role="list">
                 {['About Us', 'Contact', 'Careers', 'Blog', 'Press'].map((item, i) => (
                   <li key={i}>
                     <a 
                       href={`/${item.toLowerCase().replace(/\s+/g, '-')}`} 
-                      className="text-gray-400 hover:text-tech-blue transition-colors"
+                      className="text-gray-300 hover:text-tech-blue transition-colors"
                       aria-label={item}
                     >
                       {item}
@@ -65,13 +66,13 @@ const Footer: React.FC = () => {
             </nav>
             
             <nav aria-labelledby="resources-links">
-              <h3 id="resources-links" className="text-white font-bold mb-4">Resources</h3>
-              <ul className="space-y-2" role="list">
+              <h3 id="resources-links" className="text-white font-bold mb-4 text-lg">Resources</h3>
+              <ul className="space-y-3" role="list">
                 {['Documentation', 'Tutorials', 'FAQ', 'Support Center', 'API'].map((item, i) => (
                   <li key={i}>
                     <a 
                       href={`/${item.toLowerCase().replace(/\s+/g, '-')}`} 
-                      className="text-gray-400 hover:text-tech-blue transition-colors"
+                      className="text-gray-300 hover:text-tech-blue transition-colors"
                       aria-label={item}
                     >
                       {item}
@@ -82,13 +83,13 @@ const Footer: React.FC = () => {
             </nav>
             
             <nav aria-labelledby="legal-links">
-              <h3 id="legal-links" className="text-white font-bold mb-4">Legal</h3>
-              <ul className="space-y-2" role="list">
+              <h3 id="legal-links" className="text-white font-bold mb-4 text-lg">Legal</h3>
+              <ul className="space-y-3" role="list">
                 {['Terms of Service', 'Privacy Policy', 'Refund Policy', 'Cookie Policy'].map((item, i) => (
                   <li key={i}>
                     <a 
                       href={`/${item.toLowerCase().replace(/\s+/g, '-')}`} 
-                      className="text-gray-400 hover:text-tech-blue transition-colors"
+                      className="text-gray-300 hover:text-tech-blue transition-colors"
                       aria-label={item}
                     >
                       {item}
@@ -99,8 +100,8 @@ const Footer: React.FC = () => {
             </nav>
           </div>
           
-          <div className="border-t border-tech-blue/20 mt-12 pt-6 flex flex-col md:flex-row justify-between items-center">
-            <div className="text-gray-400 text-sm flex flex-col md:flex-row items-center gap-4">
+          <div className="border-t border-tech-blue/30 mt-12 pt-6 flex flex-col md:flex-row justify-between items-center">
+            <div className="text-gray-300 text-sm flex flex-col md:flex-row items-center gap-4">
               <p>© {currentYear} Omnia BOT. All rights reserved.</p>
               <p>Created by <span className="text-tech-blue">MUGERWA SIMON PETER</span></p>
               <a 
@@ -124,7 +125,7 @@ const Footer: React.FC = () => {
                 <a 
                   key={i} 
                   href={platform.url}
-                  className="text-gray-400 hover:text-tech-blue transition-colors"
+                  className="text-gray-300 hover:text-tech-blue transition-colors"
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={`Visit our ${platform.name} page`}
@@ -135,8 +136,8 @@ const Footer: React.FC = () => {
             </div>
           </div>
           
-          <div className="mt-8 text-center">
-            <p className="text-gray-500 text-xs" role="note">
+          <div className="mt-8 text-center bg-tech-charcoal p-4 rounded-lg">
+            <p className="text-gray-300 text-sm" role="note">
               Risk Warning: Trading forex involves substantial risk of loss and is not suitable for all investors. 
               Past performance is not indicative of future results.
             </p>
