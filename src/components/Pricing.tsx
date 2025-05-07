@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Check, Zap, Download, Copy, Bitcoin } from 'lucide-react';
@@ -118,7 +117,6 @@ const Pricing: React.FC = () => {
   // Notification function for unpaid download attempts
   const handleUnpaidDownload = () => {
     toast({
-      title: "Payment Required",
       description: "Please purchase the software before downloading.",
       variant: "destructive"
     });
@@ -126,9 +124,6 @@ const Pricing: React.FC = () => {
     // Scroll to pricing section
     document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
   };
-
-  // Always show download button if payment is made/verified
-  const showDownloadButton = hasPaid || isVerified;
 
   return (
     <>
@@ -246,11 +241,11 @@ const Pricing: React.FC = () => {
                   </Button>
                 </div>
                 
-                {/* Show download button regardless of payment status */}
+                {/* Download button - now properly prevents downloads before payment */}
                 <Button 
                   className="w-full mt-4 bg-tech-blue hover:bg-tech-blue/90 text-white gap-2"
-                  onClick={showDownloadButton ? handleDownload : handleUnpaidDownload}
-                  disabled={isLoading && !hasPaid && !isVerified}
+                  onClick={(hasPaid || isVerified) ? handleDownload : handleUnpaidDownload}
+                  disabled={isLoading}
                 >
                   <Download className="w-4 h-4" />
                   {isLoading ? "Verifying Payment..." : "Download Software"}

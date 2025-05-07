@@ -67,7 +67,7 @@ export const initializeUSDTPayment = (details: CryptoPaymentDetails) => {
       .then(() => {
         toast.success("USDT address copied to clipboard");
       })
-      .catch((error: Error) => {
+      .catch((error) => {
         console.error("Failed to copy address:", error);
         toast.error("Failed to copy address");
       });
