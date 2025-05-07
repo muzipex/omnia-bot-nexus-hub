@@ -23,11 +23,11 @@ const MatrixCandleStickBackground: React.FC = () => {
     // Handle window resize
     window.addEventListener('resize', resizeCanvas);
     
-    // Futuristic grid setup
-    const gridSize = 40;
-    const mainGridLineWidth = 1;
-    const subGridLineWidth = 0.3;
-    const numberOfParticles = 30; // Reduced from 80 to 30
+    // Futuristic grid setup - with reduced opacity
+    const gridSize = 60; // Increased grid size
+    const mainGridLineWidth = 0.4; // Decreased line width
+    const subGridLineWidth = 0.2; // Decreased line width
+    const numberOfParticles = 25; // Reduced from 30 to 25
     
     // Particle properties with price-like movement
     const particles: {
@@ -60,16 +60,16 @@ const MatrixCandleStickBackground: React.FC = () => {
       currentLife: number;
     }[] = [];
     
-    // Color themes with glowing effect
+    // Color themes with glowing effect - darker background and more subtle grid
     const colors = {
       primaryBlue: '#1EAEDB',
       accentPurple: '#8B5CF6',
       accentMagenta: '#D946EF',
       accentCyan: '#0ea5e9',
       neonGreen: '#00FF41',
-      background: 'rgba(10, 12, 21, 0.1)',
-      gridLines: 'rgba(30, 174, 219, 0.15)',
-      subGridLines: 'rgba(30, 174, 219, 0.05)',
+      background: 'rgba(10, 12, 21, 0.15)', // Increased opacity for darker effect
+      gridLines: 'rgba(30, 174, 219, 0.05)', // Reduced opacity for grid
+      subGridLines: 'rgba(30, 174, 219, 0.02)', // Even less visible sub-grid
       bullish: '#00FF41', // Green for up movement
       bearish: '#FF4169', // Red for down movement
     };
@@ -96,7 +96,7 @@ const MatrixCandleStickBackground: React.FC = () => {
     
     // Function to create new data flow line (reduced frequency)
     const createDataFlow = () => {
-      if (dataFlows.length >= 8) return; // Limit max number of flows
+      if (dataFlows.length >= 6) return; // Reduced from 8 to 6
       
       // Choose random starting position from top or sides
       const startSide = Math.floor(Math.random() * 3); // 0: top, 1: left, 2: right
@@ -150,7 +150,7 @@ const MatrixCandleStickBackground: React.FC = () => {
       const gridOffsetX = canvas.width / 2 % gridSize;
       const gridOffsetY = canvas.height / 2 % gridSize;
       
-      // Draw sub-grid
+      // Draw sub-grid - reduced visibility
       ctx.strokeStyle = colors.subGridLines;
       ctx.lineWidth = subGridLineWidth;
       
@@ -168,7 +168,7 @@ const MatrixCandleStickBackground: React.FC = () => {
         ctx.stroke();
       }
       
-      // Draw main grid
+      // Draw main grid - reduced visibility
       ctx.strokeStyle = colors.gridLines;
       ctx.lineWidth = mainGridLineWidth;
       
@@ -187,7 +187,7 @@ const MatrixCandleStickBackground: React.FC = () => {
       }
       
       // Create new data flows randomly (reduced frequency)
-      if (Math.random() < 0.02 && dataFlows.length < 8) {
+      if (Math.random() < 0.01 && dataFlows.length < 6) { // Reduced probability and max flows
         createDataFlow();
       }
       
@@ -219,7 +219,7 @@ const MatrixCandleStickBackground: React.FC = () => {
         const currentY = flow.startY + (flow.endY - flow.startY) * flow.progress;
         
         // Draw line (simpler rendering)
-        ctx.globalAlpha = alpha;
+        ctx.globalAlpha = alpha * 0.7; // Reduced opacity
         ctx.strokeStyle = flow.color;
         ctx.lineWidth = flow.width;
         ctx.beginPath();
@@ -319,7 +319,7 @@ const MatrixCandleStickBackground: React.FC = () => {
         ctx.globalAlpha = particle.alpha;
         ctx.fillStyle = particle.color;
         ctx.beginPath();
-        ctx.arc(particle.x, particle.y, pulseSize, 0, Math.PI * 2);
+        ctx.arc(particle.x, particle.y, Math.max(0.1, pulseSize), 0, Math.PI * 2);
         ctx.fill();
         
         // Draw glow effect - Ensure radius is positive
@@ -352,7 +352,7 @@ const MatrixCandleStickBackground: React.FC = () => {
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 z-0 opacity-70"
+      className="fixed inset-0 z-0 opacity-80"
       aria-hidden="true"
     />
   );

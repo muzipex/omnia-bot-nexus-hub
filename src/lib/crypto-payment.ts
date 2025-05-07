@@ -62,15 +62,16 @@ export const initializeUSDTPayment = (details: CryptoPaymentDetails) => {
   // Copy address to clipboard
   // Fix: Use a Promise-based approach to handle clipboard operations
   try {
+    // Fixed the promise chain to use proper typing
     navigator.clipboard.writeText(USDT_ADDRESS)
       .then(() => {
         toast.success("USDT address copied to clipboard");
       })
-      .catch((error: unknown) => {
+      .catch((error) => {
         console.error("Failed to copy address:", error);
         toast.error("Failed to copy address");
       });
-  } catch (error: unknown) {
+  } catch (error) {
     console.error("Clipboard API not available:", error);
     toast.error("Could not access clipboard");
   }
