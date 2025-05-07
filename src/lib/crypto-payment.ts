@@ -3,24 +3,30 @@ import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 
 // Placeholder payment addresses - these would come from your backend in production
-const USDT_ADDRESS = "TW45XUnQQzFp5tchGQbXiG5ibonLWV4ERt";
-const ETH_ADDRESS = "0x742d35Cc6634C0532925a3b844Bc454e4438f44e";
-const BTC_ADDRESS = "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh";
+export const USDT_ADDRESS = "TW45XUnQQzFp5tchGQbXiG5ibonLWV4ERt";
+export const ETH_ADDRESS = "0x742d35Cc6634C0532925a3b844Bc454e4438f44e";
+export const BTC_ADDRESS = "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh";
 
 // Types
-interface PaymentMethod {
+export interface PaymentMethod {
   name: string;
   address: string;
   icon: string;
 }
 
-interface PaymentState {
+export interface PaymentState {
   showModal: boolean;
   selectedMethod: PaymentMethod | null;
   paymentStep: number;
   isSubmitting: boolean;
   orderId: string | null;
   countdown: number;
+}
+
+interface PaymentDetails {
+  name: string;
+  price: number;
+  planId: string;
 }
 
 // Initial payment methods
@@ -72,7 +78,7 @@ export const copyPaymentAddress = async () => {
   // Log the payment attempt to Supabase (non-blocking)
   try {
     await supabase
-      .from('payment_attempts')
+      .from('transactions')
       .insert([
         {
           order_id: orderId,
@@ -87,6 +93,29 @@ export const copyPaymentAddress = async () => {
   }
 
   return orderId;
+};
+
+/**
+ * Initialize USDT payment
+ */
+export const initializeUSDTPayment = (details: PaymentDetails) => {
+  const txId = 'TX-' + Date.now().toString(36) + Math.random().toString(36).substring(2, 5).toUpperCase();
+  
+  // Store transaction in localStorage for later verification
+  const pendingTransactions = JSON.parse(localStorage.getItem('pending_crypto_transactions') || '[]');
+  const newTransaction = {
+    txId,
+    planId: details.planId,
+    name: details.name,
+    price: details.price,
+    timestamp: Date.now(),
+    status: 'pending',
+  };
+  
+  pendingTransactions.push(newTransaction);
+  localStorage.setItem('pending_crypto_transactions', JSON.stringify(pendingTransactions));
+  
+  return { txId };
 };
 
 /**

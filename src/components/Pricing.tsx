@@ -1,16 +1,19 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Check, Zap, Download, Copy, Bitcoin } from 'lucide-react';
+import { Check, Zap, Download, Bitcoin } from 'lucide-react';
 import { initializePayPalPayment } from '@/lib/paypal';
 import { useDownloadState } from '@/hooks/use-download-state';
 import { Helmet } from 'react-helmet';
 import { USDT_ADDRESS, initializeUSDTPayment } from '@/lib/crypto-payment';
 import { useCryptoPayment } from '@/hooks/use-crypto-payment';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "@/components/ui/sonner";
 import { useNavigate } from 'react-router-dom';
 import { usePaymentVerification } from '@/hooks/use-payment-verification';
+import PricingPlan from './pricing/PricingPlan';
+import CryptoPaymentDialog from './pricing/CryptoPaymentDialog';
 
+// Pricing plans data
 const pricingPlans = [
   {
     name: 'Standard',
@@ -188,66 +191,17 @@ const Pricing: React.FC = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {pricingPlans.map((plan, index) => (
-              <div 
-                key={index} 
-                className={`tech-card relative ${plan.isPopular ? 'border-tech-green glow-border' : 'hover:border-tech-blue/40'} transition-all duration-300`}
-              >
-                {plan.isPopular && (
-                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 px-4 py-1 bg-tech-green text-tech-dark text-sm font-bold rounded-full flex items-center gap-1">
-                    <Zap className="w-4 h-4" />
-                    Most Popular
-                  </div>
-                )}
-                
-                <h3 className="text-2xl font-bold mb-2 text-white">{plan.name}</h3>
-                <div className="mb-4">
-                  <span className="text-3xl font-bold text-white">${plan.price}</span>
-                  <span className="text-gray-400 text-sm"> / {plan.period}</span>
-                </div>
-                <p className="text-gray-300 mb-6">{plan.description}</p>
-                
-                <div className="space-y-3 mb-8">
-                  {plan.features.map((feature, i) => (
-                    <div key={i} className="flex items-start gap-2">
-                      <div className="min-w-4 h-4 rounded-full bg-tech-green/20 flex items-center justify-center mt-1">
-                        <Check className="w-3 h-3 text-tech-green" />
-                      </div>
-                      <span className="text-gray-300">{feature}</span>
-                    </div>
-                  ))}
-                </div>
-                
-                <div className="space-y-3">
-                  <Button 
-                    className={`w-full ${
-                      plan.isPopular
-                        ? 'bg-tech-green hover:bg-tech-green/90 text-tech-dark'
-                        : 'bg-tech-charcoal border border-tech-blue text-tech-blue hover:bg-tech-blue/10'
-                    }`}
-                    onClick={() => handlePurchase(plan)}
-                  >
-                    {plan.cta} with PayPal
-                  </Button>
-                  
-                  <Button 
-                    className="w-full bg-tech-purple hover:bg-tech-purple/90 text-white gap-2"
-                    onClick={() => handleCryptoPurchase(plan)}
-                  >
-                    <Bitcoin className="w-4 h-4" />
-                    Pay with USDT
-                  </Button>
-                </div>
-                
-                {/* Download button - now properly prevents downloads before payment */}
-                <Button 
-                  className="w-full mt-4 bg-tech-blue hover:bg-tech-blue/90 text-white gap-2"
-                  onClick={(hasPaid || isVerified) ? handleDownload : handleUnpaidDownload}
-                  disabled={isLoading}
-                >
-                  <Download className="w-4 h-4" />
-                  {isLoading ? "Verifying Payment..." : "Download Software"}
-                </Button>
-              </div>
+              <PricingPlan
+                key={index}
+                plan={plan}
+                handlePurchase={handlePurchase}
+                handleCryptoPurchase={handleCryptoPurchase}
+                handleDownload={handleDownload}
+                handleUnpaidDownload={handleUnpaidDownload}
+                hasPaid={hasPaid}
+                isVerified={isVerified}
+                isLoading={isLoading}
+              />
             ))}
           </div>
           
@@ -262,50 +216,14 @@ const Pricing: React.FC = () => {
       </div>
 
       {/* Crypto Payment Dialog */}
-      <Dialog open={showCryptoDialog} onOpenChange={setShowCryptoDialog}>
-        <DialogContent className="bg-tech-dark border-tech-blue/30">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-center">
-              Pay with USDT (Tether)
-            </DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="text-center">
-              <p className="text-gray-300">Send <span className="text-tech-green font-bold">
-                ${currentPlan?.price} USDT
-              </span> to the following address:</p>
-            </div>
-            
-            <div className="bg-tech-charcoal p-4 rounded-lg border border-tech-blue/30">
-              <div className="flex items-center space-x-2">
-                <div className="break-all text-sm text-gray-300 font-mono">
-                  {USDT_ADDRESS}
-                </div>
-                <Button variant="outline" size="sm" onClick={handleCopyAddress} className="shrink-0">
-                  <Copy className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-            
-            <div className="bg-tech-blue/10 p-4 rounded-lg">
-              <p className="text-sm text-gray-300">
-                <span className="text-tech-blue font-bold">Important:</span> Please send only USDT on the Binance Smart Chain (BEP20) network. After sending, click the button below to submit your transaction for manual verification by an admin.
-              </p>
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button 
-              onClick={handleSubmitTransaction} 
-              className="w-full bg-tech-green text-tech-dark font-bold"
-              disabled={submitting}
-            >
-              {submitting ? "Submitting..." : "I've Sent the Payment"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <CryptoPaymentDialog
+        showCryptoDialog={showCryptoDialog}
+        setShowCryptoDialog={setShowCryptoDialog}
+        currentPlan={currentPlan}
+        handleCopyAddress={handleCopyAddress}
+        submitting={submitting}
+        handleSubmitTransaction={handleSubmitTransaction}
+      />
     </>
   );
 };

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,7 @@ import { useDownloadState } from '@/hooks/use-download-state';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { flutterwavePayment } from '@/lib/flutterwave';
 import { initializePayPalPayment } from '@/lib/paypal';
-import { initializeUSDTPayment, USDT_ADDRESS } from '@/lib/crypto-payment';
+import { USDT_ADDRESS, initializeUSDTPayment } from '@/lib/crypto-payment';
 import { useCryptoPayment } from '@/hooks/use-crypto-payment';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "@/components/ui/sonner";
