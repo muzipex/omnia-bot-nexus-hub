@@ -1,166 +1,141 @@
+
 import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 
-// USDT Payment address (Binance)
-export const USDT_ADDRESS = "0xfd78ec55f626e38da6420983b55987952363417f";
+// Placeholder payment addresses - these would come from your backend in production
+const USDT_ADDRESS = "TW45XUnQQzFp5tchGQbXiG5ibonLWV4ERt";
+const ETH_ADDRESS = "0x742d35Cc6634C0532925a3b844Bc454e4438f44e";
+const BTC_ADDRESS = "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh";
 
-interface CryptoPaymentDetails {
+// Types
+interface PaymentMethod {
   name: string;
-  price: number;
-  planId: string;
+  address: string;
+  icon: string;
 }
 
-// Function to handle USDT payments
-export const initializeUSDTPayment = (details: CryptoPaymentDetails) => {
-  const { name, price, planId } = details;
-  
-  // Generate a unique transaction ID
-  const txId = `USDT-${planId}-${Date.now()}`;
-  
-  // Store pending transaction in localStorage for offline access
-  const pendingTransaction = {
-    txId,
-    planId,
-    price,
-    name,
-    timestamp: Date.now(),
-    status: 'pending'
-  };
-  
-  // Store this transaction in localStorage to track it
-  const pendingTransactions = JSON.parse(localStorage.getItem('pending_crypto_transactions') || '[]');
-  pendingTransactions.push(pendingTransaction);
-  localStorage.setItem('pending_crypto_transactions', JSON.stringify(pendingTransactions));
-  
-  // Try to store in Supabase as well
-  (async () => {
-    try {
-      const { error } = await supabase
-        .from('transactions')
-        .insert([{
-          tx_id: txId,
-          plan_id: planId,
-          price: price,
-          name: name,
-          status: 'pending',
-          payment_method: 'USDT'
-        }]);
-        
-      if (error) {
-        console.error("Error storing transaction in Supabase:", error);
-        // This is fine, we'll use localStorage as fallback
-        toast.error("Error saving to database, using local storage as fallback");
-      }
-    } catch (error) {
-      console.error("Error storing transaction in Supabase:", error);
-      // This is fine, we'll use localStorage as fallback
-      toast.error("Error saving to database, using local storage as fallback");
-    }
+interface PaymentState {
+  showModal: boolean;
+  selectedMethod: PaymentMethod | null;
+  paymentStep: number;
+  isSubmitting: boolean;
+  orderId: string | null;
+  countdown: number;
+}
+
+// Initial payment methods
+const paymentMethods: PaymentMethod[] = [
+  {
+    name: "USDT (TRC20)",
+    address: USDT_ADDRESS,
+    icon: "/crypto-icons/usdt.svg"
+  },
+  {
+    name: "Ethereum (ETH)",
+    address: ETH_ADDRESS,
+    icon: "/crypto-icons/eth.svg"
+  },
+  {
+    name: "Bitcoin (BTC)",
+    address: BTC_ADDRESS,
+    icon: "/crypto-icons/btc.svg"
+  }
+];
+
+/**
+ * Copy the crypto payment address to clipboard
+ */
+export const copyPaymentAddress = async () => {
+  // Generate order ID if not already present
+  const orderId = localStorage.getItem('orderId') || (() => {
+    const newId = 'ORD-' + Date.now().toString(36) + Math.random().toString(36).substring(2, 5).toUpperCase();
+    localStorage.setItem('orderId', newId);
+    return newId;
   })();
   
   // Copy address to clipboard
   try {
-    // Fixed to properly handle the Promise
+    // Fixed to properly handle the Promise chain
     navigator.clipboard.writeText(USDT_ADDRESS)
       .then(() => {
-        toast.success("USDT address copied to clipboard");
+        toast.success("Payment address copied to clipboard!");
       })
-      .catch((error) => {
-        console.error("Failed to copy address:", error);
-        toast.error("Failed to copy address");
+      .catch((err) => {
+        console.error("Could not copy address:", err);
+        toast.error("Failed to copy address. Please try again.");
       });
-  } catch (error) {
-    console.error("Clipboard API not available:", error);
+  } catch (err) {
+    console.error("Clipboard error:", err);
     toast.error("Could not access clipboard");
   }
-    
-  return {
-    txId,
-    address: USDT_ADDRESS,
-    amount: price
-  };
+
+  // Log the payment attempt to Supabase (non-blocking)
+  try {
+    await supabase
+      .from('payment_attempts')
+      .insert([
+        {
+          order_id: orderId,
+          payment_method: 'USDT',
+          status: 'pending',
+          created_at: new Date().toISOString()
+        }
+      ]);
+  } catch (error) {
+    console.error('Failed to log payment attempt:', error);
+    // Don't block user flow on logging failure
+  }
+
+  return orderId;
 };
 
-// Function to verify USDT transaction (in production, this would connect to an API)
-export const verifyUSDTTransaction = async (txId: string): Promise<boolean> => {
+/**
+ * Verify a crypto payment using the transaction hash
+ */
+export const verifyPayment = async (txHash: string, amount: string) => {
   try {
-    // First check if the transaction exists in Supabase
-    const { data, error } = await supabase
-      .from('transactions')
-      .select('status')
-      .eq('tx_id', txId)
-      .maybeSingle();
-      
-    if (!error && data && data.status === 'completed') {
-      // Transaction is already verified in Supabase
-      
-      // Update localStorage for offline access
-      const pendingTransactions = JSON.parse(localStorage.getItem('pending_crypto_transactions') || '[]');
-      const updatedTransactions = pendingTransactions.map((tx: any) => {
-        if (tx.txId === txId) {
-          return { ...tx, status: 'completed' };
-        }
-        return tx;
-      });
-      localStorage.setItem('pending_crypto_transactions', JSON.stringify(updatedTransactions));
-      
-      // Set payment status
-      localStorage.setItem('omniabot_payment_verified', 'true');
-      
-      // Add to verified transactions
-      const verifiedTransactions = JSON.parse(localStorage.getItem('verified_transactions') || '[]');
-      if (!verifiedTransactions.includes(txId)) {
-        verifiedTransactions.push(txId);
-        localStorage.setItem('verified_transactions', JSON.stringify(verifiedTransactions));
-      }
-      
-      return true;
-    }
+    // Here we would normally verify with blockchain API
+    // This is a placeholder implementation
     
-    // If not verified in Supabase, simulate verification for demo
-    // In a real app, you would check with a blockchain API
-    return new Promise<boolean>((resolve) => {
-      setTimeout(() => {
-        // 20% chance of success for demo purposes (since we want admin to verify most transactions)
-        const isVerified = Math.random() < 0.2;
-        
-        if (isVerified) {
-          // Update transaction status in Supabase
-          supabase
-            .from('transactions')
-            .update({ status: 'completed' })
-            .eq('tx_id', txId)
-            .then(() => {
-              // Update transaction status in localStorage
-              const pendingTransactions = JSON.parse(localStorage.getItem('pending_crypto_transactions') || '[]');
-              const updatedTransactions = pendingTransactions.map((tx: any) => {
-                if (tx.txId === txId) {
-                  return { ...tx, status: 'completed' };
-                }
-                return tx;
-              });
-              localStorage.setItem('pending_crypto_transactions', JSON.stringify(updatedTransactions));
-              
-              // Set payment status
-              localStorage.setItem('omniabot_payment_verified', 'true');
-              
-              // Add to verified transactions
-              const verifiedTransactions = JSON.parse(localStorage.getItem('verified_transactions') || '[]');
-              if (!verifiedTransactions.includes(txId)) {
-                verifiedTransactions.push(txId);
-                localStorage.setItem('verified_transactions', JSON.stringify(verifiedTransactions));
-              }
-            })
-            .catch((error) => {
-              console.error("Error updating transaction status in Supabase:", error);
-            });
-        }
-        
-        resolve(isVerified);
-      }, 3000); // Simulate network delay
-    });
+    toast.info("Verifying transaction...");
+    
+    // Simulate API call with timeout
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // For demo purposes, any hash of reasonable length is accepted
+    if (txHash.length > 30 && parseFloat(amount) >= 97) {
+      toast.success("Payment verified! Downloading...");
+      localStorage.setItem('paymentVerified', 'true');
+      return true;
+    } else {
+      toast.error("Invalid transaction or amount.");
+      return false;
+    }
   } catch (error) {
-    console.error("Error verifying transaction:", error);
+    console.error('Payment verification error:', error);
+    toast.error("Verification failed. Please try again.");
     return false;
   }
+};
+
+/**
+ * Check if a user has made a payment
+ */
+export const checkPaymentStatus = () => {
+  return localStorage.getItem('paymentVerified') === 'true';
+};
+
+/**
+ * Get all available payment methods
+ */
+export const getPaymentMethods = () => {
+  return paymentMethods;
+};
+
+/**
+ * Reset payment state
+ */
+export const resetPayment = () => {
+  localStorage.removeItem('orderId');
+  localStorage.removeItem('paymentVerified');
 };

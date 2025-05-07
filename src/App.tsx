@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { reportWebVitals, preloadComponents } from "@/lib/utils";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import DotLoader from "@/components/DotLoader";
+import FallingCandlesAnimation from "@/components/FallingCandlesAnimation";
 
 // Lazy load pages
 const Index = React.lazy(() => import("./pages/Index"));
@@ -37,6 +38,7 @@ const App = () => {
         <TooltipProvider>
           <Toaster />
           <Sonner />
+          <FallingCandlesAnimation />
           <BrowserRouter>
             <Suspense fallback={<DotLoader />}>
               <Routes>
