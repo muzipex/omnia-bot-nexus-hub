@@ -59,13 +59,35 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const signInWithProvider = async (provider: 'google' | 'github') => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: {
-        redirectTo: `${window.location.origin}/dashboard`
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`
+        }
+      });
+      
+      if (error) {
+        // Check if it's a provider not enabled error
+        if (error.message.includes('provider is not enabled') || error.message.includes('Unsupported provider')) {
+          return { 
+            error: {
+              ...error,
+              message: `${provider.charAt(0).toUpperCase() + provider.slice(1)} login is not configured yet. Please use email/password login or contact support.`
+            } as AuthError
+          };
+        }
       }
-    });
-    return { error };
+      
+      return { error };
+    } catch (err: any) {
+      return { 
+        error: {
+          message: `${provider.charAt(0).toUpperCase() + provider.slice(1)} login is currently unavailable. Please try email/password login.`,
+          status: 400
+        } as AuthError
+      };
+    }
   };
 
   const signOut = async () => {
