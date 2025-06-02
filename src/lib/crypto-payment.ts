@@ -3,11 +3,15 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const USDT_ADDRESS = "0x1234567890abcdef1234567890abcdef12345678";
 
-export const initializeUSDTPayment = async (amount: number) => {
+export const initializeUSDTPayment = (paymentData: {
+  name: string;
+  price: number;
+  planId: string;
+}) => {
   const txId = `crypto_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   return {
     address: USDT_ADDRESS,
-    amount: amount,
+    amount: paymentData.price,
     txId: txId
   };
 };
