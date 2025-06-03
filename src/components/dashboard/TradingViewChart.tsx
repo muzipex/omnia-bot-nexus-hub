@@ -51,7 +51,7 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
   }, [symbol, interval, theme]);
 
   return (
-    <Card className="bg-tech-charcoal border-tech-blue/30">
+    <Card className="bg-tech-charcoal border-tech-blue/30 relative z-10">
       <CardHeader>
         <CardTitle className="text-white flex items-center gap-2">
           📈 Live Gold Chart
@@ -60,7 +60,7 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
       <CardContent className="p-0">
         <div 
           ref={containerRef}
-          style={{ height: `${height}px` }}
+          style={{ height: `${height}px`, position: 'relative', zIndex: 10 }}
           className="tradingview-widget-container"
         >
           <div className="tradingview-widget-container__widget"></div>
