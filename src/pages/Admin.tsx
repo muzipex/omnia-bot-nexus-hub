@@ -15,7 +15,7 @@ import {
   TableRow 
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Check, X, Users, Globe, ChartBar } from "lucide-react";
+import { Check, X, Users, Globe, ChartBar, Activity } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 import {
   Card,
@@ -44,6 +44,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { ThemeSelector } from '@/components/ThemeSelector';
 
 interface PaymentTransaction {
   txId: string;
@@ -55,12 +56,26 @@ interface PaymentTransaction {
   paymentMethod: string;
 }
 
-interface Visitor {
+interface VisitorSession {
   id: string;
-  timestamp: number;
-  page: string;
+  session_id: string;
+  page_path: string;
   referrer: string | null;
+  user_agent: string;
   country: string;
+  city: string;
+  created_at: string;
+  updated_at: string;
+  is_active: boolean;
+}
+
+interface PageView {
+  id: string;
+  session_id: string;
+  page_path: string;
+  referrer: string | null;
+  duration_seconds: number;
+  created_at: string;
 }
 
 const COLORS = ['#9b87f5', '#7E69AB', '#6E59A5', '#1EAEDB', '#33C3F0', '#D6BCFA'];
@@ -137,124 +152,211 @@ const AdminLogin: React.FC<{ onLogin: (username: string, password: string) => Pr
 
 const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
   const [transactions, setTransactions] = useState<PaymentTransaction[]>([]);
-  const [visitors, setVisitors] = useState<Visitor[]>([]);
+  const [visitorSessions, setVisitorSessions] = useState<VisitorSession[]>([]);
+  const [pageViews, setPageViews] = useState<PageView[]>([]);
   const [activeTab, setActiveTab] = useState('overview');
   const [isLoading, setIsLoading] = useState(false);
+  const [realTimeStats, setRealTimeStats] = useState({
+    activeVisitors: 0,
+    totalVisitors: 0,
+    topPages: [] as { page: string; views: number }[]
+  });
 
   useEffect(() => {
-    const fetchTransactions = async () => {
-      setIsLoading(true);
-      try {
-        // Fetch transactions from Supabase
-        const { data: supabaseTransactions, error } = await supabase
-          .from('transactions')
-          .select('*')
-          .order('created_at', { ascending: false });
+    fetchRealTimeData();
+    setupRealTimeSubscriptions();
+  }, []);
 
-        if (error) {
-          console.error("Error fetching transactions:", error);
-          // Fallback to localStorage if Supabase query fails
-          const pendingTransactions = JSON.parse(localStorage.getItem('pending_crypto_transactions') || '[]');
-          const localTransactions: PaymentTransaction[] = pendingTransactions.map((tx: any) => ({
-            txId: tx.txId,
-            planId: tx.planId,
-            price: tx.price,
-            name: tx.name,
-            timestamp: tx.timestamp,
-            status: tx.status === 'completed' ? 'completed' : 
-                   tx.status === 'rejected' ? 'rejected' : 'pending',
-            paymentMethod: 'USDT'
-          }));
-          
-          // Add some mock data for demonstration
-          const mockTransactions: PaymentTransaction[] = [
-            {
-              txId: 'PAYPAL-1234567',
-              planId: 'premium',
-              price: 499,
-              name: 'Premium',
-              timestamp: Date.now() - 3600000,
-              status: 'pending',
-              paymentMethod: 'PayPal'
-            },
-            {
-              txId: 'PAYPAL-7654321',
-              planId: 'standard',
-              price: 299,
-              name: 'Standard',
-              timestamp: Date.now() - 7200000,
-              status: 'completed',
-              paymentMethod: 'PayPal'
-            }
-          ];
-          
-          setTransactions([...localTransactions, ...mockTransactions]);
-          setIsLoading(false);
-          return;
-        }
+  const fetchRealTimeData = async () => {
+    setIsLoading(true);
+    try {
+      // Fetch visitor sessions
+      const { data: sessions, error: sessionsError } = await supabase
+        .from('visitor_sessions')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
 
-        // Transform Supabase data to match our component's expected format
-        const formattedTransactions: PaymentTransaction[] = supabaseTransactions.map(tx => ({
-          txId: tx.tx_id,
-          planId: tx.plan_id,
-          price: Number(tx.price),
-          name: tx.name,
-          timestamp: new Date(tx.timestamp).getTime(),
-          status: tx.status as 'pending' | 'completed' | 'rejected',
-          paymentMethod: tx.payment_method
-        }));
+      if (sessionsError) {
+        console.error('Error fetching visitor sessions:', sessionsError);
+      } else {
+        setVisitorSessions(sessions || []);
+      }
 
-        // Also check localStorage for any transactions not yet in Supabase
+      // Fetch page views
+      const { data: views, error: viewsError } = await supabase
+        .from('page_views')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(200);
+
+      if (viewsError) {
+        console.error('Error fetching page views:', viewsError);
+      } else {
+        setPageViews(views || []);
+      }
+
+      // Calculate real-time stats
+      const activeVisitors = sessions?.filter(s => 
+        s.is_active && new Date(s.updated_at) > new Date(Date.now() - 5 * 60 * 1000)
+      ).length || 0;
+
+      const pageViewCounts = views?.reduce((acc: Record<string, number>, view) => {
+        acc[view.page_path] = (acc[view.page_path] || 0) + 1;
+        return acc;
+      }, {}) || {};
+
+      const topPages = Object.entries(pageViewCounts)
+        .map(([page, views]) => ({ page, views }))
+        .sort((a, b) => b.views - a.views)
+        .slice(0, 5);
+
+      setRealTimeStats({
+        activeVisitors,
+        totalVisitors: sessions?.length || 0,
+        topPages
+      });
+
+      // Fetch transactions
+      await fetchTransactions();
+    } catch (error) {
+      console.error('Error fetching real-time data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const setupRealTimeSubscriptions = () => {
+    // Subscribe to visitor sessions changes
+    const sessionsSubscription = supabase
+      .channel('visitor-sessions-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'visitor_sessions'
+      }, (payload) => {
+        console.log('Visitor session change:', payload);
+        fetchRealTimeData(); // Refresh data when changes occur
+      })
+      .subscribe();
+
+    // Subscribe to page views changes
+    const viewsSubscription = supabase
+      .channel('page-views-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'page_views'
+      }, (payload) => {
+        console.log('Page view change:', payload);
+        fetchRealTimeData(); // Refresh data when changes occur
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(sessionsSubscription);
+      supabase.removeChannel(viewsSubscription);
+    };
+  };
+
+  const fetchTransactions = async () => {
+    setIsLoading(true);
+    try {
+      // Fetch transactions from Supabase
+      const { data: supabaseTransactions, error } = await supabase
+        .from('transactions')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error("Error fetching transactions:", error);
+        // Fallback to localStorage if Supabase query fails
         const pendingTransactions = JSON.parse(localStorage.getItem('pending_crypto_transactions') || '[]');
-        const localTransactions: PaymentTransaction[] = pendingTransactions
-          .filter((tx: any) => !formattedTransactions.some(ft => ft.txId === tx.txId))
-          .map((tx: any) => ({
-            txId: tx.txId,
-            planId: tx.planId,
-            price: tx.price,
-            name: tx.name,
-            timestamp: tx.timestamp,
-            status: tx.status === 'completed' ? 'completed' : 
+        const localTransactions: PaymentTransaction[] = pendingTransactions.map((tx: any) => ({
+          txId: tx.txId,
+          planId: tx.planId,
+          price: tx.price,
+          name: tx.name,
+          timestamp: tx.timestamp,
+          status: tx.status === 'completed' ? 'completed' : 
                    tx.status === 'rejected' ? 'rejected' : 'pending',
-            paymentMethod: 'USDT'
-          }));
+          paymentMethod: 'USDT'
+        }));
         
-        setTransactions([...formattedTransactions, ...localTransactions]);
-      } catch (error) {
-        console.error("Error loading transactions:", error);
-        // Fallback to mock data
+        // Add some mock data for demonstration
         const mockTransactions: PaymentTransaction[] = [
           {
-            txId: 'USDT-12345',
+            txId: 'PAYPAL-1234567',
             planId: 'premium',
             price: 499,
             name: 'Premium',
-            timestamp: Date.now(),
+            timestamp: Date.now() - 3600000,
             status: 'pending',
-            paymentMethod: 'USDT'
+            paymentMethod: 'PayPal'
+          },
+          {
+            txId: 'PAYPAL-7654321',
+            planId: 'standard',
+            price: 299,
+            name: 'Standard',
+            timestamp: Date.now() - 7200000,
+            status: 'completed',
+            paymentMethod: 'PayPal'
           }
         ];
         
-        setTransactions(mockTransactions);
-      } finally {
+        setTransactions([...localTransactions, ...mockTransactions]);
         setIsLoading(false);
+        return;
       }
-    };
 
-    // Generate mock visitor data - in a real app, this would be fetched from analytics
-    const countries = ['United States', 'United Kingdom', 'Canada', 'Germany', 'Japan', 'Australia', 'Brazil', 'India'];
-    const pages = ['/', '/models', '/success', '/admin'];
-    const mockVisitors = Array.from({ length: 20 }, (_, i) => ({
-      id: `visitor-${i+1}`,
-      timestamp: Date.now() - (i * 900000),
-      page: pages[Math.floor(Math.random() * pages.length)],
-      referrer: Math.random() > 0.5 ? ['google.com', 'facebook.com', 'twitter.com'][Math.floor(Math.random() * 3)] : null,
-      country: countries[Math.floor(Math.random() * countries.length)]
-    }));
-    
-    setVisitors(mockVisitors);
-    fetchTransactions();
-  }, []);
+      // Transform Supabase data to match our component's expected format
+      const formattedTransactions: PaymentTransaction[] = supabaseTransactions.map(tx => ({
+        txId: tx.tx_id,
+        planId: tx.plan_id,
+        price: Number(tx.price),
+        name: tx.name,
+        timestamp: new Date(tx.timestamp).getTime(),
+        status: tx.status as 'pending' | 'completed' | 'rejected',
+        paymentMethod: tx.payment_method
+      }));
+
+      // Also check localStorage for any transactions not yet in Supabase
+      const pendingTransactions = JSON.parse(localStorage.getItem('pending_crypto_transactions') || '[]');
+      const localTransactions: PaymentTransaction[] = pendingTransactions
+        .filter((tx: any) => !formattedTransactions.some(ft => ft.txId === tx.txId))
+        .map((tx: any) => ({
+          txId: tx.txId,
+          planId: tx.planId,
+          price: tx.price,
+          name: tx.name,
+          timestamp: tx.timestamp,
+          status: tx.status === 'completed' ? 'completed' : 
+                   tx.status === 'rejected' ? 'rejected' : 'pending',
+          paymentMethod: 'USDT'
+        }));
+      
+      setTransactions([...formattedTransactions, ...localTransactions]);
+    } catch (error) {
+      console.error("Error loading transactions:", error);
+      // Fallback to mock data
+      const mockTransactions: PaymentTransaction[] = [
+        {
+          txId: 'USDT-12345',
+          planId: 'premium',
+          price: 499,
+          name: 'Premium',
+          timestamp: Date.now(),
+          status: 'pending',
+          paymentMethod: 'USDT'
+        }
+      ];
+      
+      setTransactions(mockTransactions);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const approvePayment = async (txId: string) => {
     try {
@@ -360,15 +462,14 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
     }
   };
 
-  const formatDate = (timestamp: number) => {
-    return new Date(timestamp).toLocaleString();
+  const formatDate = (timestamp: string | number) => {
+    const date = typeof timestamp === 'string' ? new Date(timestamp) : new Date(timestamp);
+    return date.toLocaleString();
   };
 
-  // Calculate analytics data
-  const totalVisits = visitors.length;
-  
-  const visitorsByPage = visitors.reduce((acc: Record<string, number>, visitor) => {
-    acc[visitor.page] = (acc[visitor.page] || 0) + 1;
+  // Calculate analytics data from real data
+  const visitorsByPage = pageViews.reduce((acc: Record<string, number>, view) => {
+    acc[view.page_path] = (acc[view.page_path] || 0) + 1;
     return acc;
   }, {});
   
@@ -377,8 +478,9 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
     visits: visitorsByPage[page]
   }));
 
-  const visitorsByCountry = visitors.reduce((acc: Record<string, number>, visitor) => {
-    acc[visitor.country] = (acc[visitor.country] || 0) + 1;
+  const visitorsByCountry = visitorSessions.reduce((acc: Record<string, number>, session) => {
+    const country = session.country || 'Unknown';
+    acc[country] = (acc[country] || 0) + 1;
     return acc;
   }, {});
   
@@ -398,8 +500,8 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
   const visitorsByDay: Record<string, number> = {};
   last7Days.forEach(day => { visitorsByDay[day] = 0 });
 
-  visitors.forEach(visitor => {
-    const visitDate = new Date(visitor.timestamp);
+  visitorSessions.forEach(session => {
+    const visitDate = new Date(session.created_at);
     const dayName = visitDate.toLocaleDateString('en-US', { weekday: 'short' });
     if (last7Days.includes(dayName)) {
       visitorsByDay[dayName] = (visitorsByDay[dayName] || 0) + 1;
@@ -421,32 +523,62 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
       </div>
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-6">
+        <TabsList className="grid w-full grid-cols-4 mb-6">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <ChartBar className="h-4 w-4" />
             Overview
           </TabsTrigger>
+          <TabsTrigger value="realtime" className="flex items-center gap-2">
+            <Activity className="h-4 w-4" />
+            Real-time
+          </TabsTrigger>
           <TabsTrigger value="payments" className="flex items-center gap-2">
             <Check className="h-4 w-4" />
-            Payment Verification
+            Payments
           </TabsTrigger>
-          <TabsTrigger value="visitors" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Site Visitors
+          <TabsTrigger value="themes" className="flex items-center gap-2">
+            <Globe className="h-4 w-4" />
+            Themes
           </TabsTrigger>
         </TabsList>
         
         <TabsContent value="overview" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card className="tech-card">
               <CardHeader className="pb-2">
-                <CardTitle>Total Visitors</CardTitle>
-                <CardDescription>All time site visits</CardDescription>
+                <CardTitle>Active Visitors</CardTitle>
+                <CardDescription>Currently online</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-between">
-                  <div className="text-3xl font-bold text-tech-blue">{totalVisits}</div>
+                  <div className="text-3xl font-bold text-tech-green">{realTimeStats.activeVisitors}</div>
+                  <Activity className="h-8 w-8 text-tech-green/60" />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="tech-card">
+              <CardHeader className="pb-2">
+                <CardTitle>Total Visitors</CardTitle>
+                <CardDescription>All time visits</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <div className="text-3xl font-bold text-tech-blue">{realTimeStats.totalVisitors}</div>
                   <Users className="h-8 w-8 text-tech-blue/60" />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="tech-card">
+              <CardHeader className="pb-2">
+                <CardTitle>Page Views</CardTitle>
+                <CardDescription>Total page views</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <div className="text-3xl font-bold text-tech-purple">{pageViews.length}</div>
+                  <Globe className="h-8 w-8 text-tech-purple/60" />
                 </div>
               </CardContent>
             </Card>
@@ -462,23 +594,6 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
                     {transactions.filter(tx => tx.status === 'pending').length}
                   </div>
                   <Check className="h-8 w-8 text-tech-blue/60" />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card className="tech-card">
-              <CardHeader className="pb-2">
-                <CardTitle>Top Country</CardTitle>
-                <CardDescription>Most visitors from</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <div className="text-xl font-bold text-tech-blue">
-                    {countryData.length > 0 ? 
-                      countryData.sort((a, b) => b.value - a.value)[0].name : 
-                      'No data'}
-                  </div>
-                  <Globe className="h-8 w-8 text-tech-blue/60" />
                 </div>
               </CardContent>
             </Card>
@@ -597,6 +712,65 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
           </Card>
         </TabsContent>
         
+        <TabsContent value="realtime" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Card className="tech-card">
+              <CardHeader>
+                <CardTitle>Live Visitor Sessions</CardTitle>
+                <CardDescription>Real-time visitor activity</CardDescription>
+              </CardHeader>
+              <CardContent className="max-h-96 overflow-y-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Time</TableHead>
+                      <TableHead>Page</TableHead>
+                      <TableHead>Country</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {visitorSessions.slice(0, 10).map((session) => (
+                      <TableRow key={session.id}>
+                        <TableCell className="text-xs">{formatDate(session.created_at)}</TableCell>
+                        <TableCell>{session.page_path}</TableCell>
+                        <TableCell>{session.country}</TableCell>
+                        <TableCell>
+                          <span className={`inline-block px-2 py-1 rounded text-xs ${
+                            session.is_active ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'
+                          }`}>
+                            {session.is_active ? 'Active' : 'Inactive'}
+                          </span>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+            
+            <Card className="tech-card">
+              <CardHeader>
+                <CardTitle>Top Pages</CardTitle>
+                <CardDescription>Most visited pages right now</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {realTimeStats.topPages.map((page, index) => (
+                    <div key={page.page} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-tech-blue">#{index + 1}</span>
+                        <span className="text-sm">{page.page}</span>
+                      </div>
+                      <span className="text-sm text-tech-green">{page.views} views</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+        
         <TabsContent value="payments" className="space-y-4">
           <div className="tech-card">
             {isLoading ? (
@@ -668,29 +842,8 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
           </div>
         </TabsContent>
         
-        <TabsContent value="visitors" className="space-y-4">
-          <div className="tech-card">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Time</TableHead>
-                  <TableHead>Page</TableHead>
-                  <TableHead>Country</TableHead>
-                  <TableHead>Referrer</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {visitors.map((visitor) => (
-                  <TableRow key={visitor.id}>
-                    <TableCell>{formatDate(visitor.timestamp)}</TableCell>
-                    <TableCell>{visitor.page}</TableCell>
-                    <TableCell>{visitor.country}</TableCell>
-                    <TableCell>{visitor.referrer || 'Direct'}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+        <TabsContent value="themes" className="space-y-4">
+          <ThemeSelector />
         </TabsContent>
       </Tabs>
     </div>

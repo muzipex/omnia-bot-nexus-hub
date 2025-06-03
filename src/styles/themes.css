@@ -1,0 +1,224 @@
+
+/* TradingView Theme */
+.theme-tradingview {
+  --tech-dark: #1e222d;
+  --tech-charcoal: #2a2e39;
+  --tech-blue: #2962ff;
+  --tech-green: #4caf50;
+  --tech-purple: #9c27b0;
+  --background: #1e222d;
+  --foreground: #d1d4dc;
+  --card: #2a2e39;
+  --card-foreground: #d1d4dc;
+  --primary: #2962ff;
+  --primary-foreground: #ffffff;
+  --secondary: #363a45;
+  --secondary-foreground: #d1d4dc;
+  --muted: #363a45;
+  --muted-foreground: #868993;
+  --accent: #434651;
+  --accent-foreground: #d1d4dc;
+  --destructive: #f23645;
+  --destructive-foreground: #ffffff;
+  --border: #363a45;
+  --input: #363a45;
+  --ring: #2962ff;
+}
+
+/* Cyberpunk Theme */
+.theme-cyberpunk {
+  --tech-dark: #0a0a0a;
+  --tech-charcoal: #1a1a2e;
+  --tech-blue: #00ffff;
+  --tech-green: #39ff14;
+  --tech-purple: #ff00ff;
+  --background: #0a0a0a;
+  --foreground: #00ffff;
+  --card: #1a1a2e;
+  --card-foreground: #00ffff;
+  --primary: #ff00ff;
+  --primary-foreground: #000000;
+  --secondary: #16213e;
+  --secondary-foreground: #00ffff;
+  --muted: #16213e;
+  --muted-foreground: #0f3460;
+  --accent: #e94560;
+  --accent-foreground: #000000;
+  --destructive: #ff073a;
+  --destructive-foreground: #ffffff;
+  --border: #16213e;
+  --input: #16213e;
+  --ring: #ff00ff;
+}
+
+.theme-cyberpunk .tech-card {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border: 1px solid #00ffff;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.1);
+}
+
+/* Minimal Dark Theme */
+.theme-minimal {
+  --tech-dark: #111111;
+  --tech-charcoal: #1c1c1c;
+  --tech-blue: #3b82f6;
+  --tech-green: #10b981;
+  --tech-purple: #8b5cf6;
+  --background: #111111;
+  --foreground: #fafafa;
+  --card: #1c1c1c;
+  --card-foreground: #fafafa;
+  --primary: #fafafa;
+  --primary-foreground: #111111;
+  --secondary: #262626;
+  --secondary-foreground: #fafafa;
+  --muted: #262626;
+  --muted-foreground: #a3a3a3;
+  --accent: #404040;
+  --accent-foreground: #fafafa;
+  --destructive: #ef4444;
+  --destructive-foreground: #fafafa;
+  --border: #262626;
+  --input: #262626;
+  --ring: #3b82f6;
+}
+
+.theme-minimal .tech-card {
+  background: #1c1c1c;
+  border: 1px solid #262626;
+  box-shadow: none;
+}
+
+/* Forest Theme */
+.theme-forest {
+  --tech-dark: #0d1b0d;
+  --tech-charcoal: #1a2f1a;
+  --tech-blue: #4ade80;
+  --tech-green: #22c55e;
+  --tech-purple: #84cc16;
+  --background: #0d1b0d;
+  --foreground: #dcfce7;
+  --card: #1a2f1a;
+  --card-foreground: #dcfce7;
+  --primary: #22c55e;
+  --primary-foreground: #052e16;
+  --secondary: #16a34a;
+  --secondary-foreground: #dcfce7;
+  --muted: #15803d;
+  --muted-foreground: #86efac;
+  --accent: #65a30d;
+  --accent-foreground: #f0fdf4;
+  --destructive: #dc2626;
+  --destructive-foreground: #fef2f2;
+  --border: #16a34a;
+  --input: #16a34a;
+  --ring: #22c55e;
+}
+
+.theme-forest .tech-card {
+  background: linear-gradient(135deg, #1a2f1a 0%, #15803d 100%);
+  border: 1px solid #22c55e;
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.1);
+}
+
+/* Glow effects for cyberpunk theme */
+.theme-cyberpunk .text-tech-blue {
+  text-shadow: 0 0 10px currentColor;
+}
+
+.theme-cyberpunk .text-tech-green {
+  text-shadow: 0 0 10px currentColor;
+}
+
+.theme-cyberpunk .text-tech-purple {
+  text-shadow: 0 0 10px currentColor;
+}
+</lov-style>
+
+Update the main App component to include visitor tracking and theme provider:
+
+<lov-write file_path="src/App.tsx">
+import React, { Suspense, useEffect } from "react";
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { reportWebVitals, preloadComponents } from "@/lib/utils";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import DotLoader from "@/components/DotLoader";
+import FallingCandlesAnimation from "@/components/FallingCandlesAnimation";
+import { AuthProvider } from "@/hooks/use-auth";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { ThemeProvider } from "@/components/ThemeProvider";
+import { useVisitorTracking } from "@/hooks/use-visitor-tracking";
+import "@/styles/themes.css";
+
+// Lazy load pages
+const Index = React.lazy(() => import("./pages/Index"));
+const Success = React.lazy(() => import("./pages/Success"));
+const NotFound = React.lazy(() => import("./pages/NotFound"));
+const Models = React.lazy(() => import("./pages/Models"));
+const Admin = React.lazy(() => import("./pages/Admin"));
+const Dashboard = React.lazy(() => import("./pages/Dashboard"));
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+
+const AppContent = () => {
+  useVisitorTracking(); // Track visitors on all pages
+  
+  useEffect(() => {
+    reportWebVitals();
+    preloadComponents();
+  }, []);
+
+  return (
+    <Suspense fallback={<DotLoader />}>
+      <Routes>
+        <Route path="/" element={<Index />} />
+        <Route path="/success" element={<Success />} />
+        <Route path="/models" element={<Models />} />
+        <Route path="/admin" element={<Admin />} />
+        <Route 
+          path="/dashboard" 
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          } 
+        />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </Suspense>
+  );
+};
+
+const App = () => {
+  return (
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <AuthProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <FallingCandlesAnimation />
+              <BrowserRouter>
+                <AppContent />
+              </BrowserRouter>
+            </TooltipProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
+  );
+}
+
+export default App;
