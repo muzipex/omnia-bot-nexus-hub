@@ -10,6 +10,8 @@ import TradingAnalytics from '@/components/dashboard/TradingAnalytics';
 import BotManagement from '@/components/dashboard/BotManagement';
 import NotificationCenter from '@/components/dashboard/NotificationCenter';
 import PaymentHistory from '@/components/dashboard/PaymentHistory';
+import TradingViewChart from '@/components/dashboard/TradingViewChart';
+import { ThemeSelector } from '@/components/ThemeSelector';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Dashboard = () => {
@@ -53,9 +55,10 @@ const Dashboard = () => {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5 bg-tech-charcoal">
+            <TabsList className="grid w-full grid-cols-6 bg-tech-charcoal">
               <TabsTrigger value="overview" className="data-[state=active]:bg-tech-blue">Overview</TabsTrigger>
               <TabsTrigger value="trading" className="data-[state=active]:bg-tech-blue">Trading</TabsTrigger>
+              <TabsTrigger value="chart" className="data-[state=active]:bg-tech-blue">Live Chart</TabsTrigger>
               <TabsTrigger value="bots" className="data-[state=active]:bg-tech-blue">Bot Management</TabsTrigger>
               <TabsTrigger value="notifications" className="data-[state=active]:bg-tech-blue">Notifications</TabsTrigger>
               <TabsTrigger value="payments" className="data-[state=active]:bg-tech-blue">Payments</TabsTrigger>
@@ -154,10 +157,17 @@ const Dashboard = () => {
                   </CardContent>
                 </Card>
               </div>
+
+              {/* Theme Selector */}
+              <ThemeSelector />
             </TabsContent>
 
             <TabsContent value="trading">
               <TradingAnalytics />
+            </TabsContent>
+
+            <TabsContent value="chart">
+              <TradingViewChart />
             </TabsContent>
 
             <TabsContent value="bots">

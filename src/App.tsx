@@ -11,6 +11,7 @@ import DotLoader from "@/components/DotLoader";
 import FallingCandlesAnimation from "@/components/FallingCandlesAnimation";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 // Lazy load pages
 const Index = React.lazy(() => import("./pages/Index"));
@@ -38,32 +39,34 @@ const App = () => {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <FallingCandlesAnimation />
-            <BrowserRouter>
-              <Suspense fallback={<DotLoader />}>
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/success" element={<Success />} />
-                  <Route path="/models" element={<Models />} />
-                  <Route path="/admin" element={<Admin />} />
-                  <Route 
-                    path="/dashboard" 
-                    element={
-                      <ProtectedRoute>
-                        <Dashboard />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </Suspense>
-            </BrowserRouter>
-          </TooltipProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <FallingCandlesAnimation />
+              <BrowserRouter>
+                <Suspense fallback={<DotLoader />}>
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/success" element={<Success />} />
+                    <Route path="/models" element={<Models />} />
+                    <Route path="/admin" element={<Admin />} />
+                    <Route 
+                      path="/dashboard" 
+                      element={
+                        <ProtectedRoute>
+                          <Dashboard />
+                        </ProtectedRoute>
+                      } 
+                    />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </Suspense>
+              </BrowserRouter>
+            </TooltipProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );
