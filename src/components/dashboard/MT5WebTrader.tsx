@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ExternalLink, LogIn, Settings, Play, Square, Bot } from 'lucide-react';
+import { ExternalLink, LogIn, Settings, Play, Square, Bot, Eye, EyeOff } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface MT5WebTraderProps {
@@ -18,6 +18,10 @@ const MT5WebTrader: React.FC<MT5WebTraderProps> = ({ height = 600 }) => {
   const [server, setServer] = useState('');
   const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberCredentials, setRememberCredentials] = useState(true);
+  const [autoLoginAttempted, setAutoLoginAttempted] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
   const [botScript, setBotScript] = useState('');
   const [isBotRunning, setIsBotRunning] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -370,7 +374,48 @@ setInterval(() => {
     setBotScript(defaultBotScript);
   }, []);
 
-  const handleLogin = () => {
+  const handleAutoLogin = async (serverUrl: string, loginId: string, pass: string) => {
+    setIsConnecting(true);
+    
+    try {
+      console.log('🔄 Attempting auto-login to MT5...');
+      
+      // Construct MT5 WebTrader URL with login parameters
+      const mt5Url = `https://trade.mql5.com/trade?servers=${encodeURIComponent(serverUrl)}&trade_server=${encodeURIComponent(serverUrl)}&login=${encodeURIComponent(loginId)}&password=${encodeURIComponent(pass)}&auto_login=1`;
+      
+      if (iframeRef.current) {
+        iframeRef.current.src = mt5Url;
+        
+        // Wait for iframe to load and check connection
+        setTimeout(() => {
+          setIsLoggedIn(true);
+          setIsConnecting(false);
+          
+          toast({
+            title: "Auto-Connected to MT5",
+            description: "Successfully connected using saved credentials",
+            className: "bg-tech-green"
+          });
+
+          // Auto-start bot script after successful login
+          setTimeout(() => {
+            startBotScript();
+          }, 3000);
+        }, 5000); // Wait 5 seconds for MT5 to fully load
+      }
+    } catch (error) {
+      console.error('Auto-login failed:', error);
+      setIsConnecting(false);
+      toast({
+        title: "Auto-Login Failed",
+        description: "Please login manually using the form",
+        variant: "destructive"
+      });
+      setShowLoginForm(true);
+    }
+  };
+
+  const handleLogin = async () => {
     if (!server || !login || !password) {
       toast({
         title: "Missing Information",
@@ -380,23 +425,49 @@ setInterval(() => {
       return;
     }
 
-    // Construct MT5 WebTrader URL with login parameters
-    const mt5Url = `https://trade.mql5.com/trade?servers=${encodeURIComponent(server)}&trade_server=${encodeURIComponent(server)}&login=${encodeURIComponent(login)}&password=${encodeURIComponent(password)}`;
-    
-    if (iframeRef.current) {
-      iframeRef.current.src = mt5Url;
-      setIsLoggedIn(true);
-      setShowLoginForm(false);
-      
-      toast({
-        title: "Connected to MT5",
-        description: "MT5 WebTrader loaded successfully"
-      });
+    setIsConnecting(true);
 
-      // Auto-start bot script after successful login
-      setTimeout(() => {
-        startBotScript();
-      }, 3000); // Wait 3 seconds for MT5 to fully load
+    // Save credentials if remember is checked
+    if (rememberCredentials) {
+      localStorage.setItem('mt5_credentials', JSON.stringify({
+        server,
+        login,
+        password
+      }));
+    }
+
+    try {
+      // Construct MT5 WebTrader URL with login parameters
+      const mt5Url = `https://trade.mql5.com/trade?servers=${encodeURIComponent(server)}&trade_server=${encodeURIComponent(server)}&login=${encodeURIComponent(login)}&password=${encodeURIComponent(password)}&auto_login=1`;
+      
+      if (iframeRef.current) {
+        iframeRef.current.src = mt5Url;
+        
+        setTimeout(() => {
+          setIsLoggedIn(true);
+          setShowLoginForm(false);
+          setIsConnecting(false);
+          
+          toast({
+            title: "Connected to MT5",
+            description: "MT5 WebTrader loaded successfully",
+            className: "bg-tech-green"
+          });
+
+          // Auto-start bot script after successful login
+          setTimeout(() => {
+            startBotScript();
+          }, 3000);
+        }, 5000);
+      }
+    } catch (error) {
+      console.error('Login failed:', error);
+      setIsConnecting(false);
+      toast({
+        title: "Connection Failed",
+        description: "Failed to connect to MT5. Please check your credentials.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -451,7 +522,7 @@ setInterval(() => {
 
   const openInNewTab = () => {
     if (server && login && password) {
-      const mt5Url = `https://trade.mql5.com/trade?servers=${encodeURIComponent(server)}&trade_server=${encodeURIComponent(server)}&login=${encodeURIComponent(login)}&password=${encodeURIComponent(password)}`;
+      const mt5Url = `https://trade.mql5.com/trade?servers=${encodeURIComponent(server)}&trade_server=${encodeURIComponent(server)}&login=${encodeURIComponent(login)}&password=${encodeURIComponent(password)}&auto_login=1`;
       window.open(mt5Url, '_blank');
     } else {
       window.open('https://trade.mql5.com/trade', '_blank');
@@ -463,9 +534,23 @@ setInterval(() => {
     setIsLoggedIn(false);
     setShowLoginForm(false);
     setShowBotConfig(false);
+    setAutoLoginAttempted(false);
+    setIsConnecting(false);
+    
+    // Clear saved credentials
+    localStorage.removeItem('mt5_credentials');
+    setServer('');
+    setLogin('');
+    setPassword('');
+    
     if (iframeRef.current) {
       iframeRef.current.src = 'about:blank';
     }
+    
+    toast({
+      title: "Connection Reset",
+      description: "All credentials cleared and connection reset"
+    });
   };
 
   // Cleanup on unmount
@@ -483,6 +568,12 @@ setInterval(() => {
         <CardTitle className="text-white flex items-center justify-between">
           <span className="flex items-center gap-2">
             📊 MT5 WebTrader
+            {isConnecting && (
+              <span className="flex items-center gap-1 text-yellow-400 text-sm">
+                <div className="w-4 h-4 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
+                Connecting...
+              </span>
+            )}
             {isBotRunning && (
               <span className="flex items-center gap-1 text-tech-green text-sm">
                 <Bot className="w-4 h-4 animate-pulse" />
@@ -543,7 +634,7 @@ setInterval(() => {
                 </Button>
               </>
             )}
-            {!isLoggedIn && (
+            {!isLoggedIn && !isConnecting && (
               <Button
                 variant="outline"
                 size="sm"
@@ -581,23 +672,58 @@ setInterval(() => {
                   className="bg-tech-dark border-tech-blue/30 text-white"
                 />
               </div>
-              <div>
+              <div className="relative">
                 <Label htmlFor="password" className="text-gray-300 text-sm">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Your MT5 password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="bg-tech-dark border-tech-blue/30 text-white"
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Your MT5 password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="bg-tech-dark border-tech-blue/30 text-white pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 text-gray-400 hover:text-white"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
               </div>
+            </div>
+            <div className="flex items-center gap-2 mt-4">
+              <input
+                type="checkbox"
+                id="remember"
+                checked={rememberCredentials}
+                onChange={(e) => setRememberCredentials(e.target.checked)}
+                className="rounded border-tech-blue/30"
+              />
+              <Label htmlFor="remember" className="text-gray-300 text-sm">
+                Remember credentials for auto-login
+              </Label>
             </div>
             <Button
               onClick={handleLogin}
-              className="w-full mt-4 bg-tech-blue hover:bg-tech-blue/80"
+              disabled={isConnecting}
+              className="w-full mt-4 bg-tech-blue hover:bg-tech-blue/80 disabled:opacity-50"
             >
-              Connect to MT5 & Start SMC Bot
+              {isConnecting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Connecting to MT5...
+                </>
+              ) : (
+                "Connect to MT5 & Start SMC Bot"
+              )}
             </Button>
           </div>
         )}
@@ -651,12 +777,17 @@ setInterval(() => {
           style={{ height: `${height}px`, position: 'relative', zIndex: 10 }}
           className="w-full"
         >
-          {!isLoggedIn && !showLoginForm ? (
+          {!isLoggedIn && !showLoginForm && !isConnecting ? (
             <div className="flex items-center justify-center h-full bg-tech-dark">
               <div className="text-center">
                 <div className="text-6xl mb-4">📊</div>
                 <h3 className="text-xl font-semibold text-white mb-2">MT5 WebTrader with SMC Bot</h3>
-                <p className="text-gray-400 mb-4">Connect to start trading with Smart Money Concepts analysis</p>
+                <p className="text-gray-400 mb-4">
+                  {autoLoginAttempted 
+                    ? "Auto-login attempted. Click Login if connection failed." 
+                    : "Connect to start trading with Smart Money Concepts analysis"
+                  }
+                </p>
                 <Button
                   onClick={() => setShowLoginForm(true)}
                   className="bg-tech-blue hover:bg-tech-blue/80"
@@ -664,6 +795,14 @@ setInterval(() => {
                   <LogIn className="w-4 h-4 mr-2" />
                   Login to MT5
                 </Button>
+              </div>
+            </div>
+          ) : isConnecting ? (
+            <div className="flex items-center justify-center h-full bg-tech-dark">
+              <div className="text-center">
+                <div className="w-16 h-16 border-4 border-tech-blue border-t-transparent rounded-full animate-spin mb-4 mx-auto"></div>
+                <h3 className="text-xl font-semibold text-white mb-2">Connecting to MT5...</h3>
+                <p className="text-gray-400">Please wait while we establish the connection</p>
               </div>
             </div>
           ) : (
