@@ -23,20 +23,37 @@ const MT5WebTrader: React.FC<MT5WebTraderProps> = ({ height = 600 }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const botIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const defaultBotScript = `// OMNIA BOT Advanced Trading Script with SMC Analysis
-// Smart Money Concepts Trading Bot with Higher Timeframe Analysis
+  const defaultBotScript = `// OMNIA BOT Advanced Multi-Asset Trading Script with SMC Analysis
+// Smart Money Concepts Trading Bot with Crypto, Gold & Forex pairs
 
-console.log("OMNIA BOT SMC Trading System initialized at", new Date().toISOString());
+console.log("OMNIA BOT Multi-Asset SMC Trading System initialized at", new Date().toISOString());
 
-// Advanced trading configuration
+// Enhanced trading configuration with crypto and precious metals
 const tradingConfig = {
-  symbols: ["XAUUSD", "EURUSD", "GBPUSD", "USDJPY"],
+  symbols: [
+    // Crypto pairs
+    "BTCUSD", "ETHUSD", "ADAUSD", "XRPUSD",
+    // Precious metals
+    "XAUUSD", "XAGUSD", 
+    // Major forex pairs
+    "EURUSD", "GBPUSD", "USDJPY", "USDCHF", "AUDUSD", "USDCAD", "NZDUSD",
+    // Minor pairs
+    "EURJPY", "GBPJPY", "EURGBP", "EURAUD", "GBPAUD"
+  ],
   baseLotSize: 0.01,
   maxLotSize: 1.0,
   riskPercentage: 2, // 2% risk per trade
-  stopLossPoints: 50,
-  takeProfitPoints: 150,
-  maxOpenTrades: 3,
+  stopLossPoints: {
+    crypto: 500,     // Wider SL for crypto volatility
+    metals: 100,     // Standard SL for metals
+    forex: 50        // Tight SL for forex
+  },
+  takeProfitPoints: {
+    crypto: 1500,    // Higher TP for crypto
+    metals: 300,     // Higher TP for metals
+    forex: 150       // Standard TP for forex
+  },
+  maxOpenTrades: 5,
   htfTimeframes: ["H4", "D1"], // Higher timeframes for trend analysis
   ltfTimeframes: ["M15", "M30"] // Lower timeframes for entry
 };
@@ -46,45 +63,77 @@ let openTrades = [];
 let marketStructure = {};
 let liquidityLevels = {};
 
-// Smart Money Concepts Analysis
+// Get asset category for symbol-specific settings
+function getAssetCategory(symbol) {
+  if (symbol.includes('BTC') || symbol.includes('ETH') || symbol.includes('ADA') || symbol.includes('XRP')) {
+    return 'crypto';
+  } else if (symbol.includes('XAU') || symbol.includes('XAG')) {
+    return 'metals';
+  } else {
+    return 'forex';
+  }
+}
+
+// Smart Money Concepts Analysis with asset-specific logic
 function analyzeSMCStructure(symbol, timeframe) {
   console.log(\`Analyzing SMC structure for \${symbol} on \${timeframe}\`);
   
-  // Simulate market structure analysis
+  const assetCategory = getAssetCategory(symbol);
   const random = Math.random();
-  const isBreakOfStructure = random > 0.7;
+  
+  // Adjust volatility expectations based on asset type
+  const volatilityMultiplier = assetCategory === 'crypto' ? 1.5 : assetCategory === 'metals' ? 1.2 : 1.0;
+  const isBreakOfStructure = random > (0.7 / volatilityMultiplier);
   const isBullish = random > 0.5;
   
   return {
     trend: isBullish ? 'BULLISH' : 'BEARISH',
     breakOfStructure: isBreakOfStructure,
+    assetCategory: assetCategory,
+    volatility: random * 100 * volatilityMultiplier,
     liquidity: {
       buyLiquidity: random * 100,
       sellLiquidity: random * 100
     },
     orderBlocks: {
-      bullishOB: isBullish && random > 0.6,
-      bearishOB: !isBullish && random > 0.6
+      bullishOB: isBullish && random > (0.6 - (volatilityMultiplier * 0.1)),
+      bearishOB: !isBullish && random > (0.6 - (volatilityMultiplier * 0.1))
     },
     fairValueGaps: {
       present: random > 0.5,
-      direction: isBullish ? 'UP' : 'DOWN'
+      direction: isBullish ? 'UP' : 'DOWN',
+      strength: random * volatilityMultiplier
     }
   };
 }
 
-// Calculate dynamic lot size based on risk and market conditions
-function calculateLotSize(symbol, stopLossPoints, accountBalance = 10000) {
-  const riskAmount = accountBalance * (tradingConfig.riskPercentage / 100);
-  const pointValue = symbol.includes('JPY') ? 0.01 : 0.0001;
-  const lotSize = riskAmount / (stopLossPoints * pointValue * 100000);
+// Enhanced lot size calculation with asset-specific risk
+function calculateLotSize(symbol, accountBalance = 10000) {
+  const assetCategory = getAssetCategory(symbol);
+  const stopLossPoints = tradingConfig.stopLossPoints[assetCategory];
+  
+  // Adjust risk based on asset volatility
+  const adjustedRisk = assetCategory === 'crypto' ? 
+    tradingConfig.riskPercentage * 0.8 : // Reduce risk for crypto
+    assetCategory === 'metals' ? 
+    tradingConfig.riskPercentage * 0.9 : // Slightly reduce for metals
+    tradingConfig.riskPercentage; // Full risk for forex
+  
+  const riskAmount = accountBalance * (adjustedRisk / 100);
+  const pointValue = symbol.includes('JPY') ? 0.01 : 
+                    assetCategory === 'crypto' ? 1 : 
+                    assetCategory === 'metals' ? 0.01 : 0.0001;
+  
+  const contractSize = assetCategory === 'crypto' ? 1 : 100000;
+  const lotSize = riskAmount / (stopLossPoints * pointValue * contractSize);
   
   return Math.min(Math.max(lotSize, tradingConfig.baseLotSize), tradingConfig.maxLotSize);
 }
 
-// Open trade function
+// Enhanced trade opening with asset-specific parameters
 function openTrade(symbol, direction, lotSize, stopLoss, takeProfit) {
   const tradeId = \`TRADE_\${Date.now()}_\${Math.random().toString(36).substr(2, 9)}\`;
+  const assetCategory = getAssetCategory(symbol);
   
   const trade = {
     id: tradeId,
@@ -94,20 +143,27 @@ function openTrade(symbol, direction, lotSize, stopLoss, takeProfit) {
     openTime: new Date(),
     stopLoss: stopLoss,
     takeProfit: takeProfit,
-    status: 'OPEN'
+    status: 'OPEN',
+    assetCategory: assetCategory
   };
   
   openTrades.push(trade);
   
-  console.log(\`🚀 TRADE OPENED: \${direction} \${lotSize} lots of \${symbol}\`);
+  console.log(\`🚀 \${assetCategory.toUpperCase()} TRADE OPENED: \${direction} \${lotSize} lots of \${symbol}\`);
   console.log(\`   SL: \${stopLoss} | TP: \${takeProfit} | ID: \${tradeId}\`);
   
-  // Simulate MT5 trade execution
+  // Simulate MT5 trade execution with asset-specific logic
   try {
-    // This would interface with MT5 WebTrader API in real implementation
-    console.log(\`Executing \${direction} order for \${symbol}...\`);
+    console.log(\`Executing \${direction} order for \${symbol} (\${assetCategory})...\`);
+    if (assetCategory === 'crypto') {
+      console.log(\`⚠️  Crypto trade - monitoring for high volatility\`);
+    } else if (assetCategory === 'metals') {
+      console.log(\`🥇 Precious metals trade - safe haven asset\`);
+    } else {
+      console.log(\`💱 Forex trade - major currency pair\`);
+    }
   } catch (error) {
-    console.error(\`Failed to open trade: \${error}\`);
+    console.error(\`Failed to open \${assetCategory} trade: \${error}\`);
   }
   
   return trade;
@@ -132,30 +188,37 @@ function closeTrade(tradeId, reason = 'MANUAL') {
   return null;
 }
 
-// Monitor existing trades for exit conditions
+// Enhanced trade monitoring with asset-specific rules
 function monitorTrades() {
   openTrades.forEach(trade => {
     const timeOpen = Date.now() - trade.openTime.getTime();
     const hoursOpen = timeOpen / (1000 * 60 * 60);
     
-    // Auto close trades after 24 hours
-    if (hoursOpen > 24) {
+    // Asset-specific time limits
+    const maxHours = trade.assetCategory === 'crypto' ? 12 : // Shorter for crypto
+                    trade.assetCategory === 'metals' ? 48 : // Longer for metals
+                    24; // Standard for forex
+    
+    if (hoursOpen > maxHours) {
       closeTrade(trade.id, 'TIME_EXPIRED');
     }
     
-    // Simulate price movement and SL/TP hits
+    // Simulate price movement with asset-specific volatility
     const random = Math.random();
-    if (random < 0.1) { // 10% chance of hitting SL
+    const volatilityFactor = trade.assetCategory === 'crypto' ? 0.15 : 
+                           trade.assetCategory === 'metals' ? 0.12 : 0.1;
+    
+    if (random < volatilityFactor) { // Higher chance for volatile assets
       closeTrade(trade.id, 'STOP_LOSS');
-    } else if (random > 0.9) { // 10% chance of hitting TP
+    } else if (random > (1 - volatilityFactor)) {
       closeTrade(trade.id, 'TAKE_PROFIT');
     }
   });
 }
 
-// Main trading strategy execution
+// Enhanced main trading strategy with multi-asset logic
 function executeSMCStrategy() {
-  console.log("🔍 Executing SMC Trading Strategy...");
+  console.log("🔍 Executing Multi-Asset SMC Trading Strategy...");
   console.log(\`📊 Current open trades: \${openTrades.length}/\${tradingConfig.maxOpenTrades}\`);
   
   if (openTrades.length >= tradingConfig.maxOpenTrades) {
@@ -164,7 +227,19 @@ function executeSMCStrategy() {
     return;
   }
   
+  // Group symbols by asset category for better analysis
+  const cryptoSymbols = tradingConfig.symbols.filter(s => getAssetCategory(s) === 'crypto');
+  const metalSymbols = tradingConfig.symbols.filter(s => getAssetCategory(s) === 'metals');
+  const forexSymbols = tradingConfig.symbols.filter(s => getAssetCategory(s) === 'forex');
+  
+  console.log(\`🔥 Crypto pairs: \${cryptoSymbols.length}, 🥇 Metals: \${metalSymbols.length}, 💱 Forex: \${forexSymbols.length}\`);
+  
   tradingConfig.symbols.forEach(symbol => {
+    const assetCategory = getAssetCategory(symbol);
+    
+    // Skip if we already have a trade for this symbol
+    if (openTrades.find(t => t.symbol === symbol)) return;
+    
     // Analyze higher timeframe for trend direction
     const htfAnalysis = analyzeSMCStructure(symbol, "H4");
     const dailyAnalysis = analyzeSMCStructure(symbol, "D1");
@@ -172,39 +247,62 @@ function executeSMCStrategy() {
     // Analyze lower timeframe for entry signals
     const ltfAnalysis = analyzeSMCStructure(symbol, "M15");
     
-    console.log(\`📈 \${symbol} HTF Trend: \${htfAnalysis.trend}\`);
-    console.log(\`📊 \${symbol} BOS: \${htfAnalysis.breakOfStructure}\`);
-    console.log(\`🎯 \${symbol} Order Blocks: Bull=\${ltfAnalysis.orderBlocks.bullishOB}, Bear=\${ltfAnalysis.orderBlocks.bearishOB}\`);
+    console.log(\`📈 \${symbol} (\${assetCategory}) HTF Trend: \${htfAnalysis.trend}\`);
+    console.log(\`📊 \${symbol} BOS: \${htfAnalysis.breakOfStructure}, Volatility: \${htfAnalysis.volatility.toFixed(1)}\`);
     
-    // Trading Logic: HTF trend + LTF structure
+    // Enhanced trading logic with asset-specific conditions
     const htfBullish = htfAnalysis.trend === 'BULLISH' && dailyAnalysis.trend === 'BULLISH';
     const htfBearish = htfAnalysis.trend === 'BEARISH' && dailyAnalysis.trend === 'BEARISH';
     
-    // Entry conditions
-    const bullishEntry = htfBullish && ltfAnalysis.orderBlocks.bullishOB && ltfAnalysis.fairValueGaps.direction === 'UP';
-    const bearishEntry = htfBearish && ltfAnalysis.orderBlocks.bearishOB && ltfAnalysis.fairValueGaps.direction === 'DOWN';
+    // Asset-specific entry conditions
+    const volatilityThreshold = assetCategory === 'crypto' ? 75 : 
+                               assetCategory === 'metals' ? 60 : 50;
     
-    if (bullishEntry && openTrades.filter(t => t.symbol === symbol).length === 0) {
-      const lotSize = calculateLotSize(symbol, tradingConfig.stopLossPoints);
-      const currentPrice = 2000 + (Math.random() * 100); // Simulated price
+    const bullishEntry = htfBullish && 
+                        ltfAnalysis.orderBlocks.bullishOB && 
+                        ltfAnalysis.fairValueGaps.direction === 'UP' &&
+                        htfAnalysis.volatility > volatilityThreshold;
+                        
+    const bearishEntry = htfBearish && 
+                        ltfAnalysis.orderBlocks.bearishOB && 
+                        ltfAnalysis.fairValueGaps.direction === 'DOWN' &&
+                        htfAnalysis.volatility > volatilityThreshold;
+    
+    if (bullishEntry) {
+      const lotSize = calculateLotSize(symbol);
+      const currentPrice = assetCategory === 'crypto' ? 45000 + (Math.random() * 10000) :
+                          assetCategory === 'metals' ? 2000 + (Math.random() * 100) :
+                          1 + (Math.random() * 0.5); // Simulated prices
+      
+      const stopLossDistance = tradingConfig.stopLossPoints[assetCategory] * 
+                              (assetCategory === 'crypto' ? 1 : 0.01);
+      const takeProfitDistance = tradingConfig.takeProfitPoints[assetCategory] * 
+                                (assetCategory === 'crypto' ? 1 : 0.01);
       
       openTrade(
         symbol,
         'BUY',
         lotSize,
-        currentPrice - (tradingConfig.stopLossPoints * 0.01),
-        currentPrice + (tradingConfig.takeProfitPoints * 0.01)
+        currentPrice - stopLossDistance,
+        currentPrice + takeProfitDistance
       );
-    } else if (bearishEntry && openTrades.filter(t => t.symbol === symbol).length === 0) {
-      const lotSize = calculateLotSize(symbol, tradingConfig.stopLossPoints);
-      const currentPrice = 2000 + (Math.random() * 100); // Simulated price
+    } else if (bearishEntry) {
+      const lotSize = calculateLotSize(symbol);
+      const currentPrice = assetCategory === 'crypto' ? 45000 + (Math.random() * 10000) :
+                          assetCategory === 'metals' ? 2000 + (Math.random() * 100) :
+                          1 + (Math.random() * 0.5);
+      
+      const stopLossDistance = tradingConfig.stopLossPoints[assetCategory] * 
+                              (assetCategory === 'crypto' ? 1 : 0.01);
+      const takeProfitDistance = tradingConfig.takeProfitPoints[assetCategory] * 
+                                (assetCategory === 'crypto' ? 1 : 0.01);
       
       openTrade(
         symbol,
         'SELL',
         lotSize,
-        currentPrice + (tradingConfig.stopLossPoints * 0.01),
-        currentPrice - (tradingConfig.takeProfitPoints * 0.01)
+        currentPrice + stopLossDistance,
+        currentPrice - takeProfitDistance
       );
     }
   });
@@ -212,11 +310,18 @@ function executeSMCStrategy() {
   // Monitor existing trades
   monitorTrades();
   
-  // Display current status
-  console.log(\`📋 Portfolio Status: \${openTrades.length} active trades\`);
+  // Enhanced portfolio status with asset breakdown
+  const cryptoTrades = openTrades.filter(t => t.assetCategory === 'crypto').length;
+  const metalTrades = openTrades.filter(t => t.assetCategory === 'metals').length;
+  const forexTrades = openTrades.filter(t => t.assetCategory === 'forex').length;
+  
+  console.log(\`📋 Portfolio: \${openTrades.length} total | 🔥\${cryptoTrades} crypto | 🥇\${metalTrades} metals | 💱\${forexTrades} forex\`);
+  
   if (openTrades.length > 0) {
     openTrades.forEach(trade => {
-      console.log(\`   • \${trade.symbol} \${trade.direction} \${trade.lotSize} lots (ID: \${trade.id.substr(-6)})\`);
+      const icon = trade.assetCategory === 'crypto' ? '🔥' : 
+                  trade.assetCategory === 'metals' ? '🥇' : '💱';
+      console.log(\`   \${icon} \${trade.symbol} \${trade.direction} \${trade.lotSize} lots (ID: \${trade.id.substr(-6)})\`);
     });
   }
 }
@@ -247,10 +352,12 @@ function performRiskCheck() {
 }
 
 // Initialize SMC analysis
-console.log("🤖 OMNIA BOT SMC System Ready");
-console.log("📊 Monitoring:", tradingConfig.symbols.join(", "));
+console.log("🤖 OMNIA BOT Multi-Asset SMC System Ready");
+console.log("🔥 Crypto pairs:", tradingConfig.symbols.filter(s => getAssetCategory(s) === 'crypto').join(", "));
+console.log("🥇 Metals:", tradingConfig.symbols.filter(s => getAssetCategory(s) === 'metals').join(", "));
+console.log("💱 Forex pairs:", tradingConfig.symbols.filter(s => getAssetCategory(s) === 'forex').join(", "));
 console.log("⏰ Analysis Interval: 30 seconds");
-console.log("🎯 Risk per trade:", tradingConfig.riskPercentage + "%");
+console.log("🎯 Risk per trade: Crypto 1.6%, Metals 1.8%, Forex 2%");
 
 // Execute strategy every 30 seconds
 setInterval(() => {
@@ -306,7 +413,7 @@ setInterval(() => {
       // Set up periodic execution
       botIntervalRef.current = setInterval(() => {
         try {
-          console.log("OMNIA BOT: Executing periodic SMC analysis...");
+          console.log("OMNIA BOT: Executing periodic multi-asset SMC analysis...");
           // Execute periodic bot logic here
         } catch (error) {
           console.error("OMNIA BOT Error:", error);
@@ -315,7 +422,7 @@ setInterval(() => {
       
       toast({
         title: "OMNIA BOT Started",
-        description: "SMC Trading bot is now running with advanced features",
+        description: "Multi-asset SMC trading bot now active (Crypto, Gold, Forex)",
         className: "bg-tech-green"
       });
     } catch (error) {
@@ -337,7 +444,7 @@ setInterval(() => {
     
     toast({
       title: "OMNIA BOT Stopped",
-      description: "Trading bot has been stopped",
+      description: "Multi-asset trading bot has been stopped",
       className: "bg-yellow-500"
     });
   };
