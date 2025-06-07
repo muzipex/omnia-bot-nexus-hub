@@ -11,6 +11,7 @@ import BotManagement from '@/components/dashboard/BotManagement';
 import NotificationCenter from '@/components/dashboard/NotificationCenter';
 import PaymentHistory from '@/components/dashboard/PaymentHistory';
 import TradingViewChart from '@/components/dashboard/TradingViewChart';
+import MT5WebTrader from '@/components/dashboard/MT5WebTrader';
 import { ThemeSelector } from '@/components/ThemeSelector';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -55,10 +56,11 @@ const Dashboard = () => {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6 bg-tech-charcoal">
+            <TabsList className="grid w-full grid-cols-7 bg-tech-charcoal">
               <TabsTrigger value="overview" className="data-[state=active]:bg-tech-blue">Overview</TabsTrigger>
               <TabsTrigger value="trading" className="data-[state=active]:bg-tech-blue">Trading</TabsTrigger>
               <TabsTrigger value="chart" className="data-[state=active]:bg-tech-blue">Live Chart</TabsTrigger>
+              <TabsTrigger value="mt5" className="data-[state=active]:bg-tech-blue">MT5 Trader</TabsTrigger>
               <TabsTrigger value="bots" className="data-[state=active]:bg-tech-blue">Bot Management</TabsTrigger>
               <TabsTrigger value="notifications" className="data-[state=active]:bg-tech-blue">Notifications</TabsTrigger>
               <TabsTrigger value="payments" className="data-[state=active]:bg-tech-blue">Payments</TabsTrigger>
@@ -168,6 +170,10 @@ const Dashboard = () => {
 
             <TabsContent value="chart">
               <TradingViewChart />
+            </TabsContent>
+
+            <TabsContent value="mt5">
+              <MT5WebTrader />
             </TabsContent>
 
             <TabsContent value="bots">
