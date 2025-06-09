@@ -256,30 +256,94 @@ export const useMT5Connection = () => {
   }, [user]);
 
   // Auto refresh positions and account info when auto trading is active
+ useEffect(() => {
+    // Check MT5 connection status periodically
+    if (isConnected) {
+      const connectionCheck = setInterval(async () => {
+        try {
+          const response = await fetch('http://localhost:8000/check_connection');
+          const result = await response.json();
+          
+          if (!result.connected) {
+            setIsConnected(false);
+            setAccount(null);
+            toast({
+              title: "MT5 Connection Lost",
+              description: result.error || "Lost connection to MT5",
+              variant: "destructive"
+            });
+          }
+        } catch (error) {
+          setIsConnected(false);
+          setAccount(null);
+          toast({
+            title: "Connection Error",
+            description: "Unable to reach MT5 bridge server",
+            variant: "destructive"
+          });
+        }
+      }, 5000); // Check every 5 seconds
+
+      // Refresh account info and positions regularly
+      const dataRefresh = setInterval(() => {
+        if (isConnected) {
+          loadPositions();
+          loadAccountInfo();
+        }
+      }, 3000); // Refresh data every 3 seconds
+
+      // Cleanup intervals on unmount or when disconnected
+      return () => {
+        clearInterval(connectionCheck);
+        clearInterval(dataRefresh);
+      };
+    }
+  }, [isConnected]); // Only depend on isConnected state
+
+  // Keep the user effect separate
   useEffect(() => {
+    if (user) {
+      loadAccountInfo();
+    }
+  }, [user]);
+
+  // Handle auto trading updates separately
+  useEffect(() => {
+    let autoTradingInterval: NodeJS.Timeout | null = null;
+
     if (isAutoTrading && isConnected) {
-      const interval = setInterval(() => {
+      autoTradingInterval = setInterval(() => {
         loadPositions();
         loadAccountInfo();
-      }, 3000); // Refresh every 3 seconds during auto trading
-
-      return () => clearInterval(interval);
+      }, 1000); // More frequent updates during auto trading
     }
+
+    return () => {
+      if (autoTradingInterval) {
+        clearInterval(autoTradingInterval);
+      }
+    };
   }, [isAutoTrading, isConnected]);
 
-  return {
-    isConnected,
-    account,
-    positions,
-    isLoading,
-    isAutoTrading,
-    connectToMT5,
-    placeOrder,
-    closeOrder,
-    loadAccountInfo,
-    loadPositions,
-    syncTrades,
-    startAutoTrading,
-    stopAutoTrading,
+  // Add a reconnection mechanism
+  const reconnectToMT5 = async () => {
+    if (!account) return;
+    
+    try {
+      await connectToMT5({
+        server: account.server,
+        account_number: account.account_number,
+        password: '', // You'll need to handle password storage/retrieval securely
+      });
+    } catch (error) {
+      console.error('Reconnection failed:', error);
+    }
   };
-};
+
+  // Add auto-reconnect attempt when connection is lost
+  useEffect(() => {
+    if (!isConnected && account) {
+      const reconnectTimeout = setTimeout(reconnectToMT5, 5000); // Try to reconnect after 5 seconds
+      return () => clearTimeout(reconnectTimeout);
+    }
+  }, [isConnected, account]);
