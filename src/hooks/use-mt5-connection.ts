@@ -47,6 +47,7 @@ export const useMT5Connection = () => {
   const [account, setAccount] = useState<MT5Account | null>(null);
   const [positions, setPositions] = useState<MT5Trade[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isAutoTrading, setIsAutoTrading] = useState(false);
 
   const callMT5API = async (action: string, payload: any = {}) => {
     if (!user) throw new Error('Not authenticated');
@@ -70,32 +71,34 @@ export const useMT5Connection = () => {
     return response.json();
   };
 
-  const connectToMT5 = async (accountData: {
-    account_number: number;
+  const connectToMT5 = async (credentials: {
     server: string;
-    name: string;
-    company?: string;
-    currency: string;
-    balance: number;
-    equity: number;
+    account_number: number;
+    password: string;
   }) => {
     setIsLoading(true);
     try {
-      const result = await callMT5API('connect', accountData);
-      setAccount(result.account);
-      setIsConnected(true);
-      toast({
-        title: "Connected to MT5",
-        description: `Connected to account ${accountData.account_number}`,
-      });
-      await loadPositions();
+      const result = await callMT5API('connect', credentials);
+      
+      if (result.success) {
+        setAccount(result.account);
+        setIsConnected(true);
+        toast({
+          title: "Connected to MT5",
+          description: `Connected to account ${credentials.account_number}`,
+        });
+        await loadPositions();
+      } else {
+        throw new Error(result.error || 'Connection failed');
+      }
     } catch (error) {
       console.error('MT5 connection error:', error);
       toast({
         title: "Connection Failed",
-        description: error instanceof Error ? error.message : "Failed to connect to MT5",
+        description: error instanceof Error ? error.message : "Failed to connect to MT5. Make sure MT5 bridge is running.",
         variant: "destructive"
       });
+      setIsConnected(false);
     } finally {
       setIsLoading(false);
     }
@@ -114,12 +117,16 @@ export const useMT5Connection = () => {
     setIsLoading(true);
     try {
       const result = await callMT5API('place_order', orderData);
-      toast({
-        title: "Order Placed",
-        description: `${orderData.trade_type} ${orderData.volume} lots of ${orderData.symbol}`,
-      });
-      await loadPositions();
-      return result.trade;
+      if (result.success) {
+        toast({
+          title: "Order Placed",
+          description: `${orderData.trade_type} ${orderData.volume} lots of ${orderData.symbol}`,
+        });
+        await loadPositions();
+        return result.trade;
+      } else {
+        throw new Error(result.error || 'Order failed');
+      }
     } catch (error) {
       console.error('Place order error:', error);
       toast({
@@ -137,12 +144,16 @@ export const useMT5Connection = () => {
     setIsLoading(true);
     try {
       const result = await callMT5API('close_order', { ticket, close_price, profit });
-      toast({
-        title: "Order Closed",
-        description: `Position #${ticket} closed`,
-      });
-      await loadPositions();
-      return result.trade;
+      if (result.success) {
+        toast({
+          title: "Order Closed",
+          description: `Position #${ticket} closed`,
+        });
+        await loadPositions();
+        return result.trade;
+      } else {
+        throw new Error(result.error || 'Close failed');
+      }
     } catch (error) {
       console.error('Close order error:', error);
       toast({
@@ -151,6 +162,56 @@ export const useMT5Connection = () => {
         variant: "destructive"
       });
       throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const startAutoTrading = async (settings: any) => {
+    setIsLoading(true);
+    try {
+      const result = await callMT5API('start_auto_trading', settings);
+      if (result.success) {
+        setIsAutoTrading(true);
+        toast({
+          title: "Auto Trading Started",
+          description: `Bot started trading ${settings.symbol} with ${settings.trading_strategy} strategy`,
+        });
+      } else {
+        throw new Error(result.error || 'Failed to start auto trading');
+      }
+    } catch (error) {
+      console.error('Start auto trading error:', error);
+      toast({
+        title: "Auto Trading Failed",
+        description: error instanceof Error ? error.message : "Failed to start auto trading",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const stopAutoTrading = async () => {
+    setIsLoading(true);
+    try {
+      const result = await callMT5API('stop_auto_trading');
+      if (result.success) {
+        setIsAutoTrading(false);
+        toast({
+          title: "Auto Trading Stopped",
+          description: "Trading bot has been stopped",
+        });
+      } else {
+        throw new Error(result.error || 'Failed to stop auto trading');
+      }
+    } catch (error) {
+      console.error('Stop auto trading error:', error);
+      toast({
+        title: "Stop Failed",
+        description: error instanceof Error ? error.message : "Failed to stop auto trading",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
@@ -193,16 +254,31 @@ export const useMT5Connection = () => {
     }
   }, [user]);
 
+  // Auto refresh positions and account info when auto trading is active
+  useEffect(() => {
+    if (isAutoTrading && isConnected) {
+      const interval = setInterval(() => {
+        loadPositions();
+        loadAccountInfo();
+      }, 3000); // Refresh every 3 seconds during auto trading
+
+      return () => clearInterval(interval);
+    }
+  }, [isAutoTrading, isConnected]);
+
   return {
     isConnected,
     account,
     positions,
     isLoading,
+    isAutoTrading,
     connectToMT5,
     placeOrder,
     closeOrder,
     loadAccountInfo,
     loadPositions,
     syncTrades,
+    startAutoTrading,
+    stopAutoTrading,
   };
 };

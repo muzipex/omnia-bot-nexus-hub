@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useMT5Connection } from '@/hooks/use-mt5-connection';
-import { Activity, TrendingUp, TrendingDown, DollarSign, Settings, RefreshCw } from 'lucide-react';
+import { Activity, TrendingUp, TrendingDown, DollarSign, Settings, RefreshCw, Bot } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 const TRADING_SYMBOLS = [
@@ -27,82 +27,51 @@ const MT5TradingInterface = () => {
     placeOrder,
     closeOrder,
     loadPositions,
-    loadAccountInfo
+    loadAccountInfo,
+    startAutoTrading,
+    stopAutoTrading,
+    isAutoTrading
   } = useMT5Connection();
 
-  const [orderForm, setOrderForm] = useState({
-    symbol: 'EURUSD',
-    trade_type: 'BUY' as 'BUY' | 'SELL',
-    volume: 0.01,
-    price: 0,
-    stop_loss: 0,
-    take_profit: 0,
-    comment: '',
-    magic_number: 12345
+  const [connectionForm, setConnectionForm] = useState({
+    server: '',
+    account_number: '',
+    password: ''
   });
 
-  const [connectionForm, setConnectionForm] = useState({
-    account_number: '',
-    server: '',
-    name: '',
-    company: '',
-    currency: 'USD',
-    balance: 0,
-    equity: 0
+  const [autoTradingSettings, setAutoTradingSettings] = useState({
+    symbol: 'EURUSD',
+    lot_size: 0.01,
+    stop_loss_pips: 50,
+    take_profit_pips: 100,
+    max_trades: 5,
+    trading_strategy: 'scalping'
   });
 
   const handleConnect = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!connectionForm.account_number || !connectionForm.server || !connectionForm.name) {
+    if (!connectionForm.account_number || !connectionForm.server || !connectionForm.password) {
       toast({
         title: "Validation Error",
-        description: "Please fill in all required fields",
+        description: "Please fill in server, account number, and password",
         variant: "destructive"
       });
       return;
     }
 
     await connectToMT5({
-      account_number: parseInt(connectionForm.account_number),
       server: connectionForm.server,
-      name: connectionForm.name,
-      company: connectionForm.company,
-      currency: connectionForm.currency,
-      balance: connectionForm.balance,
-      equity: connectionForm.equity
+      account_number: parseInt(connectionForm.account_number),
+      password: connectionForm.password
     });
   };
 
-  const handlePlaceOrder = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!orderForm.symbol || !orderForm.volume || !orderForm.price) {
-      toast({
-        title: "Validation Error",
-        description: "Please fill in all required order fields",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    await placeOrder({
-      symbol: orderForm.symbol,
-      trade_type: orderForm.trade_type,
-      volume: orderForm.volume,
-      price: orderForm.price,
-      stop_loss: orderForm.stop_loss || undefined,
-      take_profit: orderForm.take_profit || undefined,
-      comment: orderForm.comment,
-      magic_number: orderForm.magic_number
-    });
+  const handleStartAutoTrading = async () => {
+    await startAutoTrading(autoTradingSettings);
   };
 
-  const handleClosePosition = async (position: any) => {
-    const currentPrice = position.trade_type === 'BUY' ? position.open_price * 0.999 : position.open_price * 1.001;
-    const profit = position.trade_type === 'BUY' 
-      ? (currentPrice - position.open_price) * position.volume * 100000
-      : (position.open_price - currentPrice) * position.volume * 100000;
-    
-    await closeOrder(position.ticket, currentPrice, profit);
+  const handleStopAutoTrading = async () => {
+    await stopAutoTrading();
   };
 
   const formatCurrency = (amount: number, currency: string = 'USD') => {
@@ -121,7 +90,7 @@ const MT5TradingInterface = () => {
       const interval = setInterval(() => {
         loadPositions();
         loadAccountInfo();
-      }, 30000); // Refresh every 30 seconds
+      }, 5000); // Refresh every 5 seconds for live trading
 
       return () => clearInterval(interval);
     }
@@ -134,10 +103,16 @@ const MT5TradingInterface = () => {
         <CardHeader>
           <CardTitle className="text-white flex items-center gap-2">
             <Activity className="w-5 h-5" />
-            MT5 Connection Status
+            MT5 Local Connection
             <Badge variant={isConnected ? "default" : "destructive"} className="ml-auto">
               {isConnected ? 'Connected' : 'Disconnected'}
             </Badge>
+            {isAutoTrading && (
+              <Badge variant="secondary" className="bg-green-500">
+                <Bot className="w-3 h-3 mr-1" />
+                Auto Trading
+              </Badge>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -161,30 +136,42 @@ const MT5TradingInterface = () => {
               </div>
             </div>
           ) : (
-            <p className="text-gray-400">Not connected to MT5</p>
+            <p className="text-gray-400">Connect to your local MT5 terminal</p>
           )}
         </CardContent>
       </Card>
 
       <Tabs defaultValue="connection" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3 bg-tech-charcoal">
+        <TabsList className="grid w-full grid-cols-4 bg-tech-charcoal">
           <TabsTrigger value="connection" className="data-[state=active]:bg-tech-blue">Connection</TabsTrigger>
-          <TabsTrigger value="trading" className="data-[state=active]:bg-tech-blue">Trading</TabsTrigger>
+          <TabsTrigger value="autobot" className="data-[state=active]:bg-tech-blue">Auto Bot</TabsTrigger>
           <TabsTrigger value="positions" className="data-[state=active]:bg-tech-blue">Positions</TabsTrigger>
+          <TabsTrigger value="setup" className="data-[state=active]:bg-tech-blue">Setup Guide</TabsTrigger>
         </TabsList>
 
         {/* Connection Tab */}
         <TabsContent value="connection">
           <Card className="bg-tech-charcoal border-tech-blue/30">
             <CardHeader>
-              <CardTitle className="text-white">Connect to MT5</CardTitle>
+              <CardTitle className="text-white">Connect to Local MT5</CardTitle>
               <CardDescription className="text-gray-400">
-                Enter your MT5 account details to connect
+                Enter your MT5 credentials to connect to your local terminal
               </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleConnect} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4">
+                  <div>
+                    <Label htmlFor="server" className="text-gray-300">Server *</Label>
+                    <Input
+                      id="server"
+                      value={connectionForm.server}
+                      onChange={(e) => setConnectionForm(prev => ({ ...prev, server: e.target.value }))}
+                      className="bg-tech-dark border-tech-blue/30 text-white"
+                      placeholder="e.g., MetaQuotes-Demo, ICMarkets-Live01"
+                      required
+                    />
+                  </div>
                   <div>
                     <Label htmlFor="account_number" className="text-gray-300">Account Number *</Label>
                     <Input
@@ -197,65 +184,21 @@ const MT5TradingInterface = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="server" className="text-gray-300">Server *</Label>
+                    <Label htmlFor="password" className="text-gray-300">Password *</Label>
                     <Input
-                      id="server"
-                      value={connectionForm.server}
-                      onChange={(e) => setConnectionForm(prev => ({ ...prev, server: e.target.value }))}
-                      className="bg-tech-dark border-tech-blue/30 text-white"
-                      placeholder="e.g., MetaQuotes-Demo"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="name" className="text-gray-300">Account Name *</Label>
-                    <Input
-                      id="name"
-                      value={connectionForm.name}
-                      onChange={(e) => setConnectionForm(prev => ({ ...prev, name: e.target.value }))}
+                      id="password"
+                      type="password"
+                      value={connectionForm.password}
+                      onChange={(e) => setConnectionForm(prev => ({ ...prev, password: e.target.value }))}
                       className="bg-tech-dark border-tech-blue/30 text-white"
                       required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="company" className="text-gray-300">Company</Label>
-                    <Input
-                      id="company"
-                      value={connectionForm.company}
-                      onChange={(e) => setConnectionForm(prev => ({ ...prev, company: e.target.value }))}
-                      className="bg-tech-dark border-tech-blue/30 text-white"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="currency" className="text-gray-300">Currency</Label>
-                    <Select value={connectionForm.currency} onValueChange={(value) => setConnectionForm(prev => ({ ...prev, currency: value }))}>
-                      <SelectTrigger className="bg-tech-dark border-tech-blue/30 text-white">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="USD">USD</SelectItem>
-                        <SelectItem value="EUR">EUR</SelectItem>
-                        <SelectItem value="GBP">GBP</SelectItem>
-                        <SelectItem value="JPY">JPY</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="balance" className="text-gray-300">Initial Balance</Label>
-                    <Input
-                      id="balance"
-                      type="number"
-                      step="0.01"
-                      value={connectionForm.balance}
-                      onChange={(e) => setConnectionForm(prev => ({ ...prev, balance: parseFloat(e.target.value) || 0 }))}
-                      className="bg-tech-dark border-tech-blue/30 text-white"
                     />
                   </div>
                 </div>
                 <Button 
                   type="submit" 
                   disabled={isLoading}
-                  className="bg-tech-blue hover:bg-tech-blue/80"
+                  className="w-full bg-tech-blue hover:bg-tech-blue/80"
                 >
                   {isLoading ? 'Connecting...' : 'Connect to MT5'}
                 </Button>
@@ -264,118 +207,119 @@ const MT5TradingInterface = () => {
           </Card>
         </TabsContent>
 
-        {/* Trading Tab */}
-        <TabsContent value="trading">
+        {/* Auto Trading Bot Tab */}
+        <TabsContent value="autobot">
           <Card className="bg-tech-charcoal border-tech-blue/30">
             <CardHeader>
-              <CardTitle className="text-white">Place Order</CardTitle>
+              <CardTitle className="text-white flex items-center gap-2">
+                <Bot className="w-5 h-5" />
+                Automated Trading Bot
+              </CardTitle>
               <CardDescription className="text-gray-400">
-                Create a new trading position
+                Configure and start automated trading
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <form onSubmit={handlePlaceOrder} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="symbol" className="text-gray-300">Symbol</Label>
-                    <Select value={orderForm.symbol} onValueChange={(value) => setOrderForm(prev => ({ ...prev, symbol: value }))}>
-                      <SelectTrigger className="bg-tech-dark border-tech-blue/30 text-white">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {TRADING_SYMBOLS.map(symbol => (
-                          <SelectItem key={symbol} value={symbol}>{symbol}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="trade_type" className="text-gray-300">Order Type</Label>
-                    <Select value={orderForm.trade_type} onValueChange={(value: 'BUY' | 'SELL') => setOrderForm(prev => ({ ...prev, trade_type: value }))}>
-                      <SelectTrigger className="bg-tech-dark border-tech-blue/30 text-white">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="BUY">BUY</SelectItem>
-                        <SelectItem value="SELL">SELL</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="volume" className="text-gray-300">Volume (Lots)</Label>
-                    <Input
-                      id="volume"
-                      type="number"
-                      step="0.01"
-                      min="0.01"
-                      value={orderForm.volume}
-                      onChange={(e) => setOrderForm(prev => ({ ...prev, volume: parseFloat(e.target.value) || 0.01 }))}
-                      className="bg-tech-dark border-tech-blue/30 text-white"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="price" className="text-gray-300">Price</Label>
-                    <Input
-                      id="price"
-                      type="number"
-                      step="0.00001"
-                      value={orderForm.price}
-                      onChange={(e) => setOrderForm(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
-                      className="bg-tech-dark border-tech-blue/30 text-white"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="stop_loss" className="text-gray-300">Stop Loss (Optional)</Label>
-                    <Input
-                      id="stop_loss"
-                      type="number"
-                      step="0.00001"
-                      value={orderForm.stop_loss}
-                      onChange={(e) => setOrderForm(prev => ({ ...prev, stop_loss: parseFloat(e.target.value) || 0 }))}
-                      className="bg-tech-dark border-tech-blue/30 text-white"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="take_profit" className="text-gray-300">Take Profit (Optional)</Label>
-                    <Input
-                      id="take_profit"
-                      type="number"
-                      step="0.00001"
-                      value={orderForm.take_profit}
-                      onChange={(e) => setOrderForm(prev => ({ ...prev, take_profit: parseFloat(e.target.value) || 0 }))}
-                      className="bg-tech-dark border-tech-blue/30 text-white"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="comment" className="text-gray-300">Comment</Label>
-                    <Input
-                      id="comment"
-                      value={orderForm.comment}
-                      onChange={(e) => setOrderForm(prev => ({ ...prev, comment: e.target.value }))}
-                      className="bg-tech-dark border-tech-blue/30 text-white"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="magic_number" className="text-gray-300">Magic Number</Label>
-                    <Input
-                      id="magic_number"
-                      type="number"
-                      value={orderForm.magic_number}
-                      onChange={(e) => setOrderForm(prev => ({ ...prev, magic_number: parseInt(e.target.value) || 0 }))}
-                      className="bg-tech-dark border-tech-blue/30 text-white"
-                    />
-                  </div>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="symbol" className="text-gray-300">Trading Symbol</Label>
+                  <Select 
+                    value={autoTradingSettings.symbol} 
+                    onValueChange={(value) => setAutoTradingSettings(prev => ({ ...prev, symbol: value }))}
+                  >
+                    <SelectTrigger className="bg-tech-dark border-tech-blue/30 text-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TRADING_SYMBOLS.map(symbol => (
+                        <SelectItem key={symbol} value={symbol}>{symbol}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-                <Button 
-                  type="submit" 
-                  disabled={isLoading || !isConnected}
-                  className="bg-tech-green hover:bg-tech-green/80"
-                >
-                  {isLoading ? 'Placing Order...' : 'Place Order'}
-                </Button>
-              </form>
+                <div>
+                  <Label htmlFor="lot_size" className="text-gray-300">Lot Size</Label>
+                  <Input
+                    id="lot_size"
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    value={autoTradingSettings.lot_size}
+                    onChange={(e) => setAutoTradingSettings(prev => ({ ...prev, lot_size: parseFloat(e.target.value) || 0.01 }))}
+                    className="bg-tech-dark border-tech-blue/30 text-white"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="stop_loss_pips" className="text-gray-300">Stop Loss (Pips)</Label>
+                  <Input
+                    id="stop_loss_pips"
+                    type="number"
+                    value={autoTradingSettings.stop_loss_pips}
+                    onChange={(e) => setAutoTradingSettings(prev => ({ ...prev, stop_loss_pips: parseInt(e.target.value) || 50 }))}
+                    className="bg-tech-dark border-tech-blue/30 text-white"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="take_profit_pips" className="text-gray-300">Take Profit (Pips)</Label>
+                  <Input
+                    id="take_profit_pips"
+                    type="number"
+                    value={autoTradingSettings.take_profit_pips}
+                    onChange={(e) => setAutoTradingSettings(prev => ({ ...prev, take_profit_pips: parseInt(e.target.value) || 100 }))}
+                    className="bg-tech-dark border-tech-blue/30 text-white"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="max_trades" className="text-gray-300">Max Concurrent Trades</Label>
+                  <Input
+                    id="max_trades"
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={autoTradingSettings.max_trades}
+                    onChange={(e) => setAutoTradingSettings(prev => ({ ...prev, max_trades: parseInt(e.target.value) || 5 }))}
+                    className="bg-tech-dark border-tech-blue/30 text-white"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="trading_strategy" className="text-gray-300">Trading Strategy</Label>
+                  <Select 
+                    value={autoTradingSettings.trading_strategy} 
+                    onValueChange={(value) => setAutoTradingSettings(prev => ({ ...prev, trading_strategy: value }))}
+                  >
+                    <SelectTrigger className="bg-tech-dark border-tech-blue/30 text-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="scalping">Scalping</SelectItem>
+                      <SelectItem value="trend_following">Trend Following</SelectItem>
+                      <SelectItem value="mean_reversion">Mean Reversion</SelectItem>
+                      <SelectItem value="breakout">Breakout</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <div className="flex gap-4 pt-4">
+                {!isAutoTrading ? (
+                  <Button 
+                    onClick={handleStartAutoTrading}
+                    disabled={!isConnected || isLoading}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <Bot className="w-4 h-4 mr-2" />
+                    Start Auto Trading
+                  </Button>
+                ) : (
+                  <Button 
+                    onClick={handleStopAutoTrading}
+                    disabled={isLoading}
+                    variant="destructive"
+                  >
+                    Stop Auto Trading
+                  </Button>
+                )}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -387,7 +331,7 @@ const MT5TradingInterface = () => {
               <div>
                 <CardTitle className="text-white">Open Positions</CardTitle>
                 <CardDescription className="text-gray-400">
-                  Manage your active trading positions
+                  Live trading positions from your MT5 account
                 </CardDescription>
               </div>
               <Button
@@ -411,7 +355,7 @@ const MT5TradingInterface = () => {
                       <TableHead className="text-gray-300">Type</TableHead>
                       <TableHead className="text-gray-300">Volume</TableHead>
                       <TableHead className="text-gray-300">Open Price</TableHead>
-                      <TableHead className="text-gray-300">Open Time</TableHead>
+                      <TableHead className="text-gray-300">Current P&L</TableHead>
                       <TableHead className="text-gray-300">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -432,10 +376,12 @@ const MT5TradingInterface = () => {
                         </TableCell>
                         <TableCell className="text-white">{position.volume}</TableCell>
                         <TableCell className="text-white">{position.open_price.toFixed(5)}</TableCell>
-                        <TableCell className="text-white">{formatDateTime(position.open_time)}</TableCell>
+                        <TableCell className={`${position.profit && position.profit > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {position.profit ? formatCurrency(position.profit) : 'N/A'}
+                        </TableCell>
                         <TableCell>
                           <Button
-                            onClick={() => handleClosePosition(position)}
+                            onClick={() => closeOrder(position.ticket, position.open_price, position.profit || 0)}
                             disabled={isLoading}
                             variant="outline"
                             size="sm"
@@ -453,10 +399,58 @@ const MT5TradingInterface = () => {
                   <DollarSign className="w-12 h-12 text-gray-500 mx-auto mb-4" />
                   <p className="text-gray-400">No open positions</p>
                   <p className="text-gray-500 text-sm mt-2">
-                    {isConnected ? 'Place your first order to see positions here' : 'Connect to MT5 to view positions'}
+                    {isConnected ? 'Start auto trading to see positions here' : 'Connect to MT5 to view positions'}
                   </p>
                 </div>
               )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Setup Guide Tab */}
+        <TabsContent value="setup">
+          <Card className="bg-tech-charcoal border-tech-blue/30">
+            <CardHeader>
+              <CardTitle className="text-white">Setup Guide</CardTitle>
+              <CardDescription className="text-gray-400">
+                Follow these steps to connect your local MT5 terminal
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-6">
+                <div className="border-l-4 border-tech-blue pl-4">
+                  <h3 className="text-white font-semibold mb-2">Step 1: Download MT5 Bridge</h3>
+                  <p className="text-gray-300 mb-2">Download and run the Python MT5 bridge script on your computer where MT5 is installed.</p>
+                  <Button 
+                    onClick={() => window.open('/mt5_bridge.py', '_blank')}
+                    variant="outline"
+                    className="border-tech-blue/30 text-gray-300 hover:bg-tech-blue/10"
+                  >
+                    Download MT5 Bridge Script
+                  </Button>
+                </div>
+                
+                <div className="border-l-4 border-tech-blue pl-4">
+                  <h3 className="text-white font-semibold mb-2">Step 2: Install Requirements</h3>
+                  <p className="text-gray-300 mb-2">Install Python packages:</p>
+                  <code className="bg-tech-dark p-2 rounded text-green-400 block">
+                    pip install MetaTrader5 fastapi uvicorn requests websockets
+                  </code>
+                </div>
+                
+                <div className="border-l-4 border-tech-blue pl-4">
+                  <h3 className="text-white font-semibold mb-2">Step 3: Run Bridge</h3>
+                  <p className="text-gray-300 mb-2">Run the bridge script:</p>
+                  <code className="bg-tech-dark p-2 rounded text-green-400 block">
+                    python mt5_bridge.py
+                  </code>
+                </div>
+                
+                <div className="border-l-4 border-tech-blue pl-4">
+                  <h3 className="text-white font-semibold mb-2">Step 4: Enable Auto Trading</h3>
+                  <p className="text-gray-300">Make sure "AutoTrading" is enabled in your MT5 terminal (Tools → Options → Expert Advisors → Allow automated trading)</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
