@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from './use-auth';
 import { supabase } from '@/integrations/supabase/client';
@@ -41,6 +40,12 @@ export interface MT5Trade {
   status: string;
 }
 
+interface BridgeStatus {
+  serverRunning: boolean;
+  mt5Connected: boolean;
+  autoTradingActive: boolean;
+}
+
 export const useMT5Connection = () => {
   const { user } = useAuth();
   const [isConnected, setIsConnected] = useState(false);
@@ -48,29 +53,93 @@ export const useMT5Connection = () => {
   const [positions, setPositions] = useState<MT5Trade[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isAutoTrading, setIsAutoTrading] = useState(false);
+  const [bridgeStatus, setBridgeStatus] = useState<BridgeStatus>({
+    serverRunning: false,
+    mt5Connected: false,
+    autoTradingActive: false
+  });
+  const [serverLogs, setServerLogs] = useState<string[]>([]);
+  const [lastCredentials, setLastCredentials] = useState<{
+    server: string;
+    account_number: number;
+    password: string;
+  } | null>(null);
 
   const callMT5API = async (action: string, payload: any = {}) => {
     if (!user) throw new Error('Not authenticated');
 
-    const response = await fetch(`http://localhost:8000/${action}`, {
-        method: 'POST',
+    try {
+      const response = await fetch(`http://localhost:8000/${action}`, {
+        method: action === 'check_connection' || action === 'logs' ? 'GET' : 'POST',
         headers: {
-            'Content-Type': 'application/json',
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(payload),
-    });
+        body: action === 'check_connection' || action === 'logs' ? undefined : JSON.stringify(payload),
+      });
 
-    if (!response.ok) {
+      if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
-    }
+      }
 
-    const result = await response.json();
-    if (!result.success) {
+      const result = await response.json();
+      if (!result.success && action !== 'check_connection') {
         throw new Error(result.error || `${action} failed`);
-    }
+      }
 
-    return result;
-};
+      return result;
+    } catch (error) {
+      console.error(`${action} error:`, error);
+      throw error;
+    }
+  };
+
+  const checkBridgeStatus = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/check_connection');
+      const result = await response.json();
+      
+      setBridgeStatus(prev => ({
+        ...prev,
+        serverRunning: true,
+        mt5Connected: result.connected
+      }));
+      
+      if (!result.connected && isConnected) {
+        setIsConnected(false);
+        toast({
+          title: "MT5 Connection Lost",
+          description: result.error || "Lost connection to MT5",
+          variant: "destructive"
+        });
+      } else if (result.connected && !isConnected && lastCredentials) {
+        // Try to reconnect if we have credentials
+        await reconnectToMT5();
+      }
+    } catch (error) {
+      setBridgeStatus(prev => ({
+        ...prev,
+        serverRunning: false,
+        mt5Connected: false
+      }));
+      setIsConnected(false);
+      toast({
+        title: "Bridge Server Error",
+        description: "Unable to reach MT5 bridge server",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const fetchServerLogs = async () => {
+    try {
+      const result = await callMT5API('logs');
+      if (result.success && result.logs) {
+        setServerLogs(result.logs);
+      }
+    } catch (error) {
+      console.error('Failed to fetch server logs:', error);
+    }
+  };
 
   const connectToMT5 = async (credentials: {
     server: string;
@@ -79,27 +148,38 @@ export const useMT5Connection = () => {
   }) => {
     setIsLoading(true);
     try {
+      // First verify bridge is running
+      await checkBridgeStatus();
+      
+      if (!bridgeStatus.serverRunning) {
+        throw new Error('MT5 bridge server is not running. Please start the bridge application first.');
+      }
+
       const result = await callMT5API('connect', credentials);
       
       if (result.success) {
         setAccount(result.account);
         setIsConnected(true);
+        setLastCredentials(credentials);
+        setBridgeStatus(prev => ({
+          ...prev,
+          mt5Connected: true
+        }));
         toast({
           title: "Connected to MT5",
           description: `Connected to account ${credentials.account_number}`,
         });
         await loadPositions();
-      } else {
-        throw new Error(result.error || 'Connection failed');
       }
     } catch (error) {
       console.error('MT5 connection error:', error);
+      setIsConnected(false);
+      setAccount(null);
       toast({
         title: "Connection Failed",
-        description: error instanceof Error ? error.message : "Failed to connect to MT5. Make sure MT5 bridge is running.",
+        description: error instanceof Error ? error.message : "Failed to connect to MT5",
         variant: "destructive"
       });
-      setIsConnected(false);
     } finally {
       setIsLoading(false);
     }
@@ -325,25 +405,53 @@ export const useMT5Connection = () => {
     };
   }, [isAutoTrading, isConnected]);
 
-  // Add a reconnection mechanism
+  // Update your reconnection mechanism
   const reconnectToMT5 = async () => {
-    if (!account) return;
+    if (!lastCredentials) return;
     
     try {
-      await connectToMT5({
-        server: account.server,
-        account_number: account.account_number,
-        password: '', // You'll need to handle password storage/retrieval securely
-      });
+      await connectToMT5(lastCredentials);
     } catch (error) {
       console.error('Reconnection failed:', error);
     }
   };
 
-  // Add auto-reconnect attempt when connection is lost
+  // Unified status check effect
   useEffect(() => {
-    if (!isConnected && account) {
-      const reconnectTimeout = setTimeout(reconnectToMT5, 5000); // Try to reconnect after 5 seconds
-      return () => clearTimeout(reconnectTimeout);
-    }
-  }, [isConnected, account]);
+    const statusCheck = setInterval(async () => {
+      if (!bridgeStatus.serverRunning) {
+        await checkBridgeStatus();
+      }
+      if (isConnected) {
+        await fetchServerLogs();
+        await loadPositions();
+        await loadAccountInfo();
+      }
+    }, 3000);
+
+    // Initial check
+    checkBridgeStatus();
+
+    return () => clearInterval(statusCheck);
+  }, [isConnected, bridgeStatus.serverRunning]);
+
+  return {
+    isConnected,
+    account,
+    positions,
+    isLoading,
+    isAutoTrading,
+    bridgeStatus,
+    serverLogs,
+    connectToMT5,
+    placeOrder,
+    closeOrder,
+    loadAccountInfo,
+    loadPositions,
+    syncTrades,
+    startAutoTrading,
+    stopAutoTrading,
+    checkBridgeStatus,
+    fetchServerLogs,
+  };
+};
