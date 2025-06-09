@@ -297,6 +297,168 @@ export type Database = {
         }
         Relationships: []
       }
+      mt5_accounts: {
+        Row: {
+          account_number: number
+          balance: number
+          company: string | null
+          created_at: string
+          currency: string
+          equity: number
+          free_margin: number | null
+          id: string
+          is_active: boolean
+          last_sync: string
+          leverage: number | null
+          margin: number | null
+          margin_level: number | null
+          name: string
+          server: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_number: number
+          balance: number
+          company?: string | null
+          created_at?: string
+          currency: string
+          equity: number
+          free_margin?: number | null
+          id?: string
+          is_active?: boolean
+          last_sync?: string
+          leverage?: number | null
+          margin?: number | null
+          margin_level?: number | null
+          name: string
+          server: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_number?: number
+          balance?: number
+          company?: string | null
+          created_at?: string
+          currency?: string
+          equity?: number
+          free_margin?: number | null
+          id?: string
+          is_active?: boolean
+          last_sync?: string
+          leverage?: number | null
+          margin?: number | null
+          margin_level?: number | null
+          name?: string
+          server?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      mt5_market_data: {
+        Row: {
+          ask: number
+          bid: number
+          created_at: string
+          id: string
+          spread: number
+          symbol: string
+          timestamp: string
+          volume: number | null
+        }
+        Insert: {
+          ask: number
+          bid: number
+          created_at?: string
+          id?: string
+          spread: number
+          symbol: string
+          timestamp?: string
+          volume?: number | null
+        }
+        Update: {
+          ask?: number
+          bid?: number
+          created_at?: string
+          id?: string
+          spread?: number
+          symbol?: string
+          timestamp?: string
+          volume?: number | null
+        }
+        Relationships: []
+      }
+      mt5_trades: {
+        Row: {
+          close_price: number | null
+          close_time: string | null
+          comment: string | null
+          commission: number | null
+          created_at: string
+          id: string
+          magic_number: number | null
+          open_price: number
+          open_time: string
+          profit: number | null
+          status: string
+          stop_loss: number | null
+          swap: number | null
+          symbol: string
+          take_profit: number | null
+          ticket: number
+          trade_type: string
+          updated_at: string
+          user_id: string
+          volume: number
+        }
+        Insert: {
+          close_price?: number | null
+          close_time?: string | null
+          comment?: string | null
+          commission?: number | null
+          created_at?: string
+          id?: string
+          magic_number?: number | null
+          open_price: number
+          open_time: string
+          profit?: number | null
+          status?: string
+          stop_loss?: number | null
+          swap?: number | null
+          symbol: string
+          take_profit?: number | null
+          ticket: number
+          trade_type: string
+          updated_at?: string
+          user_id: string
+          volume: number
+        }
+        Update: {
+          close_price?: number | null
+          close_time?: string | null
+          comment?: string | null
+          commission?: number | null
+          created_at?: string
+          id?: string
+          magic_number?: number | null
+          open_price?: number
+          open_time?: string
+          profit?: number | null
+          status?: string
+          stop_loss?: number | null
+          swap?: number | null
+          symbol?: string
+          take_profit?: number | null
+          ticket?: number
+          trade_type?: string
+          updated_at?: string
+          user_id?: string
+          volume?: number
+        }
+        Relationships: []
+      }
       Omni: {
         Row: {
           created_at: string

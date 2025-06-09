@@ -1,9 +1,8 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { User, Mail, Shield, LogOut, Download, Settings, TrendingUp, Bot, Bell, CreditCard } from 'lucide-react';
+import { User, Mail, Shield, LogOut, Download, Settings, TrendingUp, Bot, Bell, CreditCard, Activity } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useDownloadState } from '@/hooks/use-download-state';
 import TradingAnalytics from '@/components/dashboard/TradingAnalytics';
@@ -12,6 +11,7 @@ import NotificationCenter from '@/components/dashboard/NotificationCenter';
 import PaymentHistory from '@/components/dashboard/PaymentHistory';
 import TradingViewChart from '@/components/dashboard/TradingViewChart';
 import MT5WebTrader from '@/components/dashboard/MT5WebTrader';
+import MT5TradingInterface from '@/components/dashboard/MT5TradingInterface';
 import { ThemeSelector } from '@/components/ThemeSelector';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -56,11 +56,12 @@ const Dashboard = () => {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-7 bg-tech-charcoal">
+            <TabsList className="grid w-full grid-cols-8 bg-tech-charcoal">
               <TabsTrigger value="overview" className="data-[state=active]:bg-tech-blue">Overview</TabsTrigger>
               <TabsTrigger value="trading" className="data-[state=active]:bg-tech-blue">Trading</TabsTrigger>
               <TabsTrigger value="chart" className="data-[state=active]:bg-tech-blue">Live Chart</TabsTrigger>
-              <TabsTrigger value="mt5" className="data-[state=active]:bg-tech-blue">MT5 Trader</TabsTrigger>
+              <TabsTrigger value="mt5-web" className="data-[state=active]:bg-tech-blue">MT5 Web</TabsTrigger>
+              <TabsTrigger value="mt5-local" className="data-[state=active]:bg-tech-blue">MT5 Local</TabsTrigger>
               <TabsTrigger value="bots" className="data-[state=active]:bg-tech-blue">Bot Management</TabsTrigger>
               <TabsTrigger value="notifications" className="data-[state=active]:bg-tech-blue">Notifications</TabsTrigger>
               <TabsTrigger value="payments" className="data-[state=active]:bg-tech-blue">Payments</TabsTrigger>
@@ -172,8 +173,12 @@ const Dashboard = () => {
               <TradingViewChart />
             </TabsContent>
 
-            <TabsContent value="mt5">
+            <TabsContent value="mt5-web">
               <MT5WebTrader />
+            </TabsContent>
+
+            <TabsContent value="mt5-local">
+              <MT5TradingInterface />
             </TabsContent>
 
             <TabsContent value="bots">
