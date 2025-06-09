@@ -52,24 +52,25 @@ export const useMT5Connection = () => {
   const callMT5API = async (action: string, payload: any = {}) => {
     if (!user) throw new Error('Not authenticated');
 
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) throw new Error('No session');
-
-    const response = await fetch('/functions/v1/mt5-api', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${session.access_token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ action, ...payload }),
+    const response = await fetch(`http://localhost:8000/${action}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    return response.json();
-  };
+    const result = await response.json();
+    if (!result.success) {
+        throw new Error(result.error || `${action} failed`);
+    }
+
+    return result;
+};
 
   const connectToMT5 = async (credentials: {
     server: string;
