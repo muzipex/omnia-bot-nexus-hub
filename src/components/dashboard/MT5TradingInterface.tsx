@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useMT5Connection } from '@/hooks/use-mt5-connection';
@@ -6,6 +5,7 @@ import MT5ConnectionCard from './mt5/MT5ConnectionCard';
 import MT5AutoTradingCard from './mt5/MT5AutoTradingCard';
 import MT5PositionsCard from './mt5/MT5PositionsCard';
 import MT5BridgeManager from './MT5BridgeManager';
+import MobileTradingDashboard from '../mobile/MobileTradingDashboard';
 
 const MT5TradingInterface = () => {
   const {
@@ -36,7 +36,7 @@ const MT5TradingInterface = () => {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="bridge" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4 bg-gray-800 border border-gray-700">
+        <TabsList className="grid w-full grid-cols-5 bg-gray-800 border border-gray-700">
           <TabsTrigger 
             value="bridge" 
             className="data-[state=active]:bg-cyan-600 data-[state=active]:text-white text-gray-300"
@@ -60,6 +60,12 @@ const MT5TradingInterface = () => {
             className="data-[state=active]:bg-cyan-600 data-[state=active]:text-white text-gray-300"
           >
             Positions
+          </TabsTrigger>
+          <TabsTrigger 
+            value="mobile" 
+            className="data-[state=active]:bg-cyan-600 data-[state=active]:text-white text-gray-300"
+          >
+            Mobile
           </TabsTrigger>
         </TabsList>
 
@@ -94,6 +100,10 @@ const MT5TradingInterface = () => {
             onRefresh={loadPositions}
             onCloseOrder={closeOrder}
           />
+        </TabsContent>
+
+        <TabsContent value="mobile">
+          <MobileTradingDashboard />
         </TabsContent>
       </Tabs>
     </div>
