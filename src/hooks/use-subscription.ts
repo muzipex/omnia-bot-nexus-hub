@@ -47,17 +47,24 @@ export const useSubscription = () => {
       }
 
       if (data) {
-        setSubscription(data);
+        // Type assertion to fix the type issues
+        const typedSubscription: Subscription = {
+          ...data,
+          subscription_type: data.subscription_type as 'trial' | 'basic' | 'premium' | 'enterprise',
+          status: data.status as 'active' | 'inactive' | 'expired' | 'cancelled'
+        };
+        
+        setSubscription(typedSubscription);
         
         // Check if subscription is valid
         const now = new Date();
         let isValid = false;
 
-        if (data.subscription_type === 'trial' && data.status === 'active') {
-          const trialExpires = new Date(data.trial_expires_at || '');
+        if (typedSubscription.subscription_type === 'trial' && typedSubscription.status === 'active') {
+          const trialExpires = new Date(typedSubscription.trial_expires_at || '');
           isValid = now <= trialExpires;
-        } else if (data.status === 'active' && data.subscription_expires_at) {
-          const subscriptionExpires = new Date(data.subscription_expires_at);
+        } else if (typedSubscription.status === 'active' && typedSubscription.subscription_expires_at) {
+          const subscriptionExpires = new Date(typedSubscription.subscription_expires_at);
           isValid = now <= subscriptionExpires;
         }
 

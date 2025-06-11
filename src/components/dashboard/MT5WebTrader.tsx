@@ -374,47 +374,6 @@ setInterval(() => {
     setBotScript(defaultBotScript);
   }, []);
 
-  const handleAutoLogin = async (serverUrl: string, loginId: string, pass: string) => {
-    setIsConnecting(true);
-    
-    try {
-      console.log('🔄 Attempting auto-login to MT5...');
-      
-      // Construct MT5 WebTrader URL with login parameters
-      const mt5Url = `https://trade.mql5.com/trade?servers=${encodeURIComponent(serverUrl)}&trade_server=${encodeURIComponent(serverUrl)}&login=${encodeURIComponent(loginId)}&password=${encodeURIComponent(pass)}&auto_login=1`;
-      
-      if (iframeRef.current) {
-        iframeRef.current.src = mt5Url;
-        
-        // Wait for iframe to load and check connection
-        setTimeout(() => {
-          setIsLoggedIn(true);
-          setIsConnecting(false);
-          
-          toast({
-            title: "Auto-Connected to MT5",
-            description: "Successfully connected using saved credentials",
-            className: "bg-tech-green"
-          });
-
-          // Auto-start bot script after successful login
-          setTimeout(() => {
-            startBotScript();
-          }, 3000);
-        }, 5000); // Wait 5 seconds for MT5 to fully load
-      }
-    } catch (error) {
-      console.error('Auto-login failed:', error);
-      setIsConnecting(false);
-      toast({
-        title: "Auto-Login Failed",
-        description: "Please login manually using the form",
-        variant: "destructive"
-      });
-      setShowLoginForm(true);
-    }
-  };
-
   const handleLogin = async () => {
     if (!server || !login || !password) {
       toast({
@@ -437,7 +396,7 @@ setInterval(() => {
     }
 
     try {
-      // Construct MT5 WebTrader URL with login parameters
+      // Use MT5 WebTrader URL instead of MT4
       const mt5Url = `https://trade.mql5.com/trade?servers=${encodeURIComponent(server)}&trade_server=${encodeURIComponent(server)}&login=${encodeURIComponent(login)}&password=${encodeURIComponent(password)}&auto_login=1`;
       
       if (iframeRef.current) {
@@ -451,7 +410,7 @@ setInterval(() => {
           toast({
             title: "Connected to MT5",
             description: "MT5 WebTrader loaded successfully",
-            className: "bg-tech-green"
+            className: "bg-green-500 text-white"
           });
 
           // Auto-start bot script after successful login
@@ -494,7 +453,7 @@ setInterval(() => {
       toast({
         title: "OMNIA BOT Started",
         description: "Multi-asset SMC trading bot now active (Crypto, Gold, Forex)",
-        className: "bg-tech-green"
+        className: "bg-green-500 text-white"
       });
     } catch (error) {
       console.error("Bot script error:", error);
@@ -516,7 +475,7 @@ setInterval(() => {
     toast({
       title: "OMNIA BOT Stopped",
       description: "Multi-asset trading bot has been stopped",
-      className: "bg-yellow-500"
+      className: "bg-yellow-500 text-white"
     });
   };
 
@@ -563,7 +522,7 @@ setInterval(() => {
   }, []);
 
   return (
-    <Card className="bg-tech-charcoal border-tech-blue/30 relative z-10">
+    <Card className="bg-gradient-to-br from-gray-900 via-gray-800 to-black border-cyan-500/30 shadow-xl relative z-10">
       <CardHeader>
         <CardTitle className="text-white flex items-center justify-between">
           <span className="flex items-center gap-2">
@@ -575,7 +534,7 @@ setInterval(() => {
               </span>
             )}
             {isBotRunning && (
-              <span className="flex items-center gap-1 text-tech-green text-sm">
+              <span className="flex items-center gap-1 text-green-400 text-sm">
                 <Bot className="w-4 h-4 animate-pulse" />
                 SMC Bot Active
               </span>
@@ -586,7 +545,7 @@ setInterval(() => {
               variant="outline"
               size="sm"
               onClick={openInNewTab}
-              className="border-tech-blue/30 text-gray-300 hover:bg-tech-blue/10"
+              className="border-cyan-500/30 text-gray-300 hover:bg-cyan-500/10"
             >
               <ExternalLink className="w-4 h-4 mr-1" />
               Open in Tab
@@ -597,7 +556,7 @@ setInterval(() => {
                   variant="outline"
                   size="sm"
                   onClick={() => setShowBotConfig(!showBotConfig)}
-                  className="border-tech-blue/30 text-gray-300 hover:bg-tech-blue/10"
+                  className="border-cyan-500/30 text-gray-300 hover:bg-cyan-500/10"
                 >
                   <Bot className="w-4 h-4 mr-1" />
                   SMC Bot Config
@@ -617,7 +576,7 @@ setInterval(() => {
                     variant="outline"
                     size="sm"
                     onClick={startBotScript}
-                    className="border-tech-green/30 text-tech-green hover:bg-tech-green/10"
+                    className="border-green-500/30 text-green-400 hover:bg-green-500/10"
                   >
                     <Play className="w-4 h-4 mr-1" />
                     Start Bot
@@ -627,7 +586,7 @@ setInterval(() => {
                   variant="outline"
                   size="sm"
                   onClick={resetConnection}
-                  className="border-tech-blue/30 text-gray-300 hover:bg-tech-blue/10"
+                  className="border-cyan-500/30 text-gray-300 hover:bg-cyan-500/10"
                 >
                   <Settings className="w-4 h-4 mr-1" />
                   Reset
@@ -639,7 +598,7 @@ setInterval(() => {
                 variant="outline"
                 size="sm"
                 onClick={() => setShowLoginForm(!showLoginForm)}
-                className="border-tech-blue/30 text-gray-300 hover:bg-tech-blue/10"
+                className="border-cyan-500/30 text-gray-300 hover:bg-cyan-500/10"
               >
                 <LogIn className="w-4 h-4 mr-1" />
                 Login
@@ -650,7 +609,7 @@ setInterval(() => {
       </CardHeader>
       <CardContent className="p-0">
         {showLoginForm && !isLoggedIn && (
-          <div className="p-4 border-b border-tech-blue/30">
+          <div className="p-4 border-b border-cyan-500/30">
             <div className="grid gap-4 md:grid-cols-3">
               <div>
                 <Label htmlFor="server" className="text-gray-300 text-sm">Server</Label>
@@ -659,7 +618,7 @@ setInterval(() => {
                   placeholder="e.g., MetaQuotes-Demo"
                   value={server}
                   onChange={(e) => setServer(e.target.value)}
-                  className="bg-tech-dark border-tech-blue/30 text-white"
+                  className="bg-gray-800 border-cyan-500/30 text-white"
                 />
               </div>
               <div>
@@ -669,7 +628,7 @@ setInterval(() => {
                   placeholder="Your MT5 login"
                   value={login}
                   onChange={(e) => setLogin(e.target.value)}
-                  className="bg-tech-dark border-tech-blue/30 text-white"
+                  className="bg-gray-800 border-cyan-500/30 text-white"
                 />
               </div>
               <div className="relative">
@@ -681,7 +640,7 @@ setInterval(() => {
                     placeholder="Your MT5 password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="bg-tech-dark border-tech-blue/30 text-white pr-10"
+                    className="bg-gray-800 border-cyan-500/30 text-white pr-10"
                   />
                   <Button
                     type="button"
@@ -705,7 +664,7 @@ setInterval(() => {
                 id="remember"
                 checked={rememberCredentials}
                 onChange={(e) => setRememberCredentials(e.target.checked)}
-                className="rounded border-tech-blue/30"
+                className="rounded border-cyan-500/30"
               />
               <Label htmlFor="remember" className="text-gray-300 text-sm">
                 Remember credentials for auto-login
@@ -714,7 +673,7 @@ setInterval(() => {
             <Button
               onClick={handleLogin}
               disabled={isConnecting}
-              className="w-full mt-4 bg-tech-blue hover:bg-tech-blue/80 disabled:opacity-50"
+              className="w-full mt-4 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white"
             >
               {isConnecting ? (
                 <>
@@ -729,7 +688,7 @@ setInterval(() => {
         )}
 
         {showBotConfig && isLoggedIn && (
-          <div className="p-4 border-b border-tech-blue/30">
+          <div className="p-4 border-b border-cyan-500/30">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <Label className="text-gray-300 text-sm font-semibold">OMNIA SMC Trading Bot Configuration</Label>
@@ -738,7 +697,7 @@ setInterval(() => {
                     <Button
                       size="sm"
                       onClick={stopBotScript}
-                      className="bg-red-500 hover:bg-red-600"
+                      className="bg-red-600 hover:bg-red-700 text-white"
                     >
                       <Square className="w-3 h-3 mr-1" />
                       Stop
@@ -747,7 +706,7 @@ setInterval(() => {
                     <Button
                       size="sm"
                       onClick={startBotScript}
-                      className="bg-tech-green hover:bg-tech-green/80"
+                      className="bg-green-600 hover:bg-green-700 text-white"
                     >
                       <Play className="w-3 h-3 mr-1" />
                       Start
@@ -759,7 +718,7 @@ setInterval(() => {
                 placeholder="Enter your SMC bot trading script here..."
                 value={botScript}
                 onChange={(e) => setBotScript(e.target.value)}
-                className="bg-tech-dark border-tech-blue/30 text-white font-mono text-sm min-h-[300px]"
+                className="bg-gray-800 border-cyan-500/30 text-white font-mono text-sm min-h-[300px]"
                 disabled={isBotRunning}
               />
               <div className="text-xs text-gray-400 space-y-1">
@@ -767,7 +726,7 @@ setInterval(() => {
                 <p>📊 <strong>Multi-Timeframe:</strong> H4/D1 for trend, M15/M30 for entry signals</p>
                 <p>💰 <strong>Risk Management:</strong> Dynamic lot sizing, 2% risk per trade, auto SL/TP</p>
                 <p>⚡ <strong>Auto Trading:</strong> Opens/closes trades based on SMC principles</p>
-                {isBotRunning && <p className="text-tech-green">✅ Bot is actively trading - stop to edit script.</p>}
+                {isBotRunning && <p className="text-green-400">✅ Bot is actively trading - stop to edit script.</p>}
               </div>
             </div>
           </div>
@@ -778,19 +737,16 @@ setInterval(() => {
           className="w-full"
         >
           {!isLoggedIn && !showLoginForm && !isConnecting ? (
-            <div className="flex items-center justify-center h-full bg-tech-dark">
+            <div className="flex items-center justify-center h-full bg-gray-900">
               <div className="text-center">
                 <div className="text-6xl mb-4">📊</div>
                 <h3 className="text-xl font-semibold text-white mb-2">MT5 WebTrader with SMC Bot</h3>
                 <p className="text-gray-400 mb-4">
-                  {autoLoginAttempted 
-                    ? "Auto-login attempted. Click Login if connection failed." 
-                    : "Connect to start trading with Smart Money Concepts analysis"
-                  }
+                  Connect to start trading with Smart Money Concepts analysis
                 </p>
                 <Button
                   onClick={() => setShowLoginForm(true)}
-                  className="bg-tech-blue hover:bg-tech-blue/80"
+                  className="bg-cyan-600 hover:bg-cyan-500 text-white"
                 >
                   <LogIn className="w-4 h-4 mr-2" />
                   Login to MT5
@@ -798,9 +754,9 @@ setInterval(() => {
               </div>
             </div>
           ) : isConnecting ? (
-            <div className="flex items-center justify-center h-full bg-tech-dark">
+            <div className="flex items-center justify-center h-full bg-gray-900">
               <div className="text-center">
-                <div className="w-16 h-16 border-4 border-tech-blue border-t-transparent rounded-full animate-spin mb-4 mx-auto"></div>
+                <div className="w-16 h-16 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mb-4 mx-auto"></div>
                 <h3 className="text-xl font-semibold text-white mb-2">Connecting to MT5...</h3>
                 <p className="text-gray-400">Please wait while we establish the connection</p>
               </div>
