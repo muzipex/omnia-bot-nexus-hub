@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from './use-auth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from './use-toast';
+import { useConnectedAccounts } from './use-connected-accounts';
 
 export interface MT5Account {
   id: string;
@@ -48,6 +49,7 @@ interface BridgeStatus {
 
 export const useMT5Connection = () => {
   const { user } = useAuth();
+  const { accounts, syncAccount } = useConnectedAccounts();
   const [isConnected, setIsConnected] = useState(false);
   const [account, setAccount] = useState<MT5Account | null>(null);
   const [positions, setPositions] = useState<MT5Trade[]>([]);
@@ -165,6 +167,41 @@ export const useMT5Connection = () => {
           ...prev,
           mt5Connected: true
         }));
+
+        // Add/update account in connected accounts
+        const existingAccount = accounts.find(
+          acc => acc.account_number === credentials.account_number && acc.server === credentials.server
+        );
+
+        if (!existingAccount) {
+          await supabase.from('mt5_connected_accounts').insert({
+            user_id: user!.id,
+            account_number: credentials.account_number,
+            server: credentials.server,
+            account_name: result.account.name,
+            currency: result.account.currency,
+            balance: result.account.balance,
+            equity: result.account.equity,
+            margin: result.account.margin || 0,
+            free_margin: result.account.free_margin || 0,
+            margin_level: result.account.margin_level || 0,
+            leverage: result.account.leverage || 100,
+            is_connected: true
+          });
+        } else {
+          await supabase.from('mt5_connected_accounts')
+            .update({
+              balance: result.account.balance,
+              equity: result.account.equity,
+              margin: result.account.margin || 0,
+              free_margin: result.account.free_margin || 0,
+              margin_level: result.account.margin_level || 0,
+              is_connected: true,
+              last_sync: new Date().toISOString()
+            })
+            .eq('id', existingAccount.id);
+        }
+
         toast({
           title: "Connected to MT5",
           description: `Connected to account ${credentials.account_number}`,
@@ -347,38 +384,44 @@ export const useMT5Connection = () => {
           if (!result.connected) {
             setIsConnected(false);
             setAccount(null);
+            
+            // Update all connected accounts status
+            await supabase.from('mt5_connected_accounts')
+              .update({ is_connected: false })
+              .eq('user_id', user?.id);
+              
             toast({
               title: "MT5 Connection Lost",
               description: result.error || "Lost connection to MT5",
               variant: "destructive"
             });
+          } else {
+            // Sync all connected accounts
+            for (const connectedAccount of accounts) {
+              if (connectedAccount.is_connected) {
+                await syncAccount(connectedAccount.id);
+              }
+            }
           }
         } catch (error) {
           setIsConnected(false);
           setAccount(null);
+          
+          await supabase.from('mt5_connected_accounts')
+            .update({ is_connected: false })
+            .eq('user_id', user?.id);
+            
           toast({
             title: "Connection Error",
             description: "Unable to reach MT5 bridge server",
             variant: "destructive"
           });
         }
-      }, 5000); // Check every 5 seconds
+      }, 10000); // Check every 10 seconds
 
-      // Refresh account info and positions regularly
-      const dataRefresh = setInterval(() => {
-        if (isConnected) {
-          loadPositions();
-          loadAccountInfo();
-        }
-      }, 3000); // Refresh data every 3 seconds
-
-      // Cleanup intervals on unmount or when disconnected
-      return () => {
-        clearInterval(connectionCheck);
-        clearInterval(dataRefresh);
-      };
+      return () => clearInterval(connectionCheck);
     }
-  }, [isConnected]); // Only depend on isConnected state
+  }, [isConnected, accounts, user]); // Only depend on isConnected state
 
   // Keep the user effect separate
   useEffect(() => {

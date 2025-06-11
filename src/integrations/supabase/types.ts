@@ -9,6 +9,44 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      account_sync_logs: {
+        Row: {
+          account_id: string | null
+          created_at: string | null
+          error_message: string | null
+          id: string
+          sync_data: Json | null
+          sync_duration_ms: number | null
+          sync_status: string
+        }
+        Insert: {
+          account_id?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          sync_data?: Json | null
+          sync_duration_ms?: number | null
+          sync_status: string
+        }
+        Update: {
+          account_id?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          sync_data?: Json | null
+          sync_duration_ms?: number | null
+          sync_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_sync_logs_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "mt5_connected_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admins: {
         Row: {
           created_at: string
@@ -353,6 +391,66 @@ export type Database = {
           name?: string
           server?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      mt5_connected_accounts: {
+        Row: {
+          account_name: string | null
+          account_number: number
+          balance: number | null
+          broker: string | null
+          created_at: string | null
+          currency: string | null
+          equity: number | null
+          free_margin: number | null
+          id: string
+          is_connected: boolean | null
+          last_sync: string | null
+          leverage: number | null
+          margin: number | null
+          margin_level: number | null
+          server: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          account_name?: string | null
+          account_number: number
+          balance?: number | null
+          broker?: string | null
+          created_at?: string | null
+          currency?: string | null
+          equity?: number | null
+          free_margin?: number | null
+          id?: string
+          is_connected?: boolean | null
+          last_sync?: string | null
+          leverage?: number | null
+          margin?: number | null
+          margin_level?: number | null
+          server: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          account_name?: string | null
+          account_number?: number
+          balance?: number | null
+          broker?: string | null
+          created_at?: string | null
+          currency?: string | null
+          equity?: number | null
+          free_margin?: number | null
+          id?: string
+          is_connected?: boolean | null
+          last_sync?: string | null
+          leverage?: number | null
+          margin?: number | null
+          margin_level?: number | null
+          server?: string
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: []
@@ -724,6 +822,54 @@ export type Database = {
         }
         Relationships: []
       }
+      subscriptions: {
+        Row: {
+          created_at: string | null
+          credit_card_token: string | null
+          id: string
+          status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          subscription_expires_at: string | null
+          subscription_started_at: string | null
+          subscription_type: string
+          trial_expires_at: string | null
+          trial_started_at: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          credit_card_token?: string | null
+          id?: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_expires_at?: string | null
+          subscription_started_at?: string | null
+          subscription_type?: string
+          trial_expires_at?: string | null
+          trial_started_at?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          credit_card_token?: string | null
+          id?: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_expires_at?: string | null
+          subscription_started_at?: string | null
+          subscription_type?: string
+          trial_expires_at?: string | null
+          trial_started_at?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       tasks: {
         Row: {
           analysis: string | null
@@ -931,6 +1077,16 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
         }
         Returns: boolean
+      }
+      update_account_sync_status: {
+        Args: {
+          account_id: string
+          sync_status: string
+          sync_data?: Json
+          error_message?: string
+          sync_duration_ms?: number
+        }
+        Returns: string
       }
     }
     Enums: {
