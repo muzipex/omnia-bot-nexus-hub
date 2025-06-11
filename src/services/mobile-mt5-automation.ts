@@ -2,6 +2,7 @@
 import { App } from '@capacitor/app';
 import { BackgroundTask } from '@capacitor/background-task';
 import { LocalNotifications } from '@capacitor/local-notifications';
+import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
 
 export interface MobileTradingBot {
@@ -201,7 +202,7 @@ export class MobileMT5AutomationService {
   async openMT5App() {
     // Deep link to MT5 mobile app
     try {
-      await App.openUrl({ url: 'mt5://open' });
+      await Browser.open({ url: 'mt5://open' });
     } catch (error) {
       // Fallback to Play Store/App Store
       const isAndroid = Capacitor.getPlatform() === 'android';
@@ -209,7 +210,7 @@ export class MobileMT5AutomationService {
         ? 'https://play.google.com/store/apps/details?id=net.metaquotes.metatrader5'
         : 'https://apps.apple.com/app/metatrader-5/id413251709';
       
-      await App.openUrl({ url: storeUrl });
+      await Browser.open({ url: storeUrl });
     }
   }
 }
