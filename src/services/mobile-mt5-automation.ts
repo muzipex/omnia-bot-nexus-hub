@@ -1,10 +1,4 @@
 
-import { App } from '@capacitor/app';
-import { BackgroundTask } from '@capacitor/background-task';
-import { LocalNotifications } from '@capacitor/local-notifications';
-import { Browser } from '@capacitor/browser';
-import { Capacitor } from '@capacitor/core';
-
 export interface MobileTradingBot {
   id: string;
   name: string;
@@ -21,26 +15,12 @@ export interface MobileTradingBot {
 
 export class MobileMT5AutomationService {
   private bots: MobileTradingBot[] = [];
-  private backgroundTaskId?: string;
+  private intervals: Map<string, number> = new Map();
   private isRunning = false;
 
   async initializeService() {
-    if (!Capacitor.isNativePlatform()) {
-      console.log('Not running on native platform, automation disabled');
-      return;
-    }
-
-    // Request notification permissions
-    await LocalNotifications.requestPermissions();
-    
-    // Setup app state listeners
-    App.addListener('appStateChange', ({ isActive }) => {
-      if (!isActive && this.isRunning) {
-        this.startBackgroundAutomation();
-      } else if (isActive) {
-        this.stopBackgroundAutomation();
-      }
-    });
+    console.log('Web-based MT5 automation service initialized');
+    await this.loadBots();
   }
 
   async addBot(bot: MobileTradingBot) {
@@ -54,6 +34,7 @@ export class MobileMT5AutomationService {
 
   async removeBot(botId: string) {
     this.bots = this.bots.filter(bot => bot.id !== botId);
+    this.stopBotInterval(botId);
     await this.saveBots();
   }
 
@@ -75,18 +56,10 @@ export class MobileMT5AutomationService {
     const bot = this.bots.find(b => b.id === botId);
     if (!bot) return;
 
-    // Send notification about bot activation
-    await LocalNotifications.schedule({
-      notifications: [{
-        title: 'OMNIA Bot Active',
-        body: `${bot.name} trading bot is now running on ${bot.symbol}`,
-        id: Date.now(),
-        schedule: { at: new Date(Date.now() + 1000) }
-      }]
-    });
+    // Show browser notification if supported
+    this.showNotification('OMNIA Bot Active', `${bot.name} trading bot is now running on ${bot.symbol}`);
 
-    // In a real implementation, this would interface with MT5 mobile app
-    // For now, we'll simulate the automation logic
+    // Start trading simulation
     this.simulateTrading(bot);
   }
 
@@ -94,56 +67,29 @@ export class MobileMT5AutomationService {
     const bot = this.bots.find(b => b.id === botId);
     if (!bot) return;
 
-    await LocalNotifications.schedule({
-      notifications: [{
-        title: 'OMNIA Bot Stopped',
-        body: `${bot.name} trading bot has been stopped`,
-        id: Date.now(),
-        schedule: { at: new Date(Date.now() + 1000) }
-      }]
-    });
+    this.stopBotInterval(botId);
+    this.showNotification('OMNIA Bot Stopped', `${bot.name} trading bot has been stopped`);
   }
 
-  private async startBackgroundAutomation() {
-    this.backgroundTaskId = await BackgroundTask.beforeExit(async () => {
-      console.log('Starting background automation...');
-      
-      // Run automation for active bots
-      const activeBots = this.bots.filter(bot => bot.isActive);
-      
-      for (const bot of activeBots) {
-        await this.executeTradeLogic(bot);
-      }
-
-      // Finish the background task
-      if (this.backgroundTaskId) {
-        BackgroundTask.finish({ taskId: this.backgroundTaskId });
-      }
-    });
-  }
-
-  private stopBackgroundAutomation() {
-    if (this.backgroundTaskId) {
-      BackgroundTask.finish({ taskId: this.backgroundTaskId });
-      this.backgroundTaskId = undefined;
+  private stopBotInterval(botId: string) {
+    const intervalId = this.intervals.get(botId);
+    if (intervalId) {
+      clearInterval(intervalId);
+      this.intervals.delete(botId);
     }
   }
 
   private async executeTradeLogic(bot: MobileTradingBot) {
-    // This would integrate with MT5 mobile app or API
     console.log(`Executing trade logic for ${bot.name}`);
     
     // Simulate trade execution
     const tradeResult = await this.simulateTradeExecution(bot);
     
     if (tradeResult.success) {
-      await LocalNotifications.schedule({
-        notifications: [{
-          title: `Trade Executed - ${bot.name}`,
-          body: `${tradeResult.action} ${bot.settings.lotSize} lots ${bot.symbol} at ${tradeResult.price}`,
-          id: Date.now()
-        }]
-      });
+      this.showNotification(
+        `Trade Executed - ${bot.name}`,
+        `${tradeResult.action} ${bot.settings.lotSize} lots ${bot.symbol} at ${tradeResult.price}`
+      );
     }
   }
 
@@ -167,30 +113,48 @@ export class MobileMT5AutomationService {
   }
 
   private simulateTrading(bot: MobileTradingBot) {
-    // Set up periodic trading simulation
-    const interval = setInterval(async () => {
+    // Clear any existing interval for this bot
+    this.stopBotInterval(bot.id);
+
+    // Set up new periodic trading simulation
+    const intervalId = setInterval(async () => {
       if (!bot.isActive) {
-        clearInterval(interval);
+        this.stopBotInterval(bot.id);
         return;
       }
       
       await this.executeTradeLogic(bot);
     }, 30000); // Execute every 30 seconds
+
+    this.intervals.set(bot.id, intervalId);
+  }
+
+  private showNotification(title: string, body: string) {
+    // Use browser notifications if supported
+    if ('Notification' in window) {
+      if (Notification.permission === 'granted') {
+        new Notification(title, { body });
+      } else if (Notification.permission !== 'denied') {
+        Notification.requestPermission().then(permission => {
+          if (permission === 'granted') {
+            new Notification(title, { body });
+          }
+        });
+      }
+    }
+    
+    // Also log to console
+    console.log(`${title}: ${body}`);
   }
 
   private async saveBots() {
-    if (Capacitor.isNativePlatform()) {
-      // Save to native storage
-      localStorage.setItem('omnia-mobile-bots', JSON.stringify(this.bots));
-    }
+    localStorage.setItem('omnia-mobile-bots', JSON.stringify(this.bots));
   }
 
   async loadBots() {
-    if (Capacitor.isNativePlatform()) {
-      const savedBots = localStorage.getItem('omnia-mobile-bots');
-      if (savedBots) {
-        this.bots = JSON.parse(savedBots);
-      }
+    const savedBots = localStorage.getItem('omnia-mobile-bots');
+    if (savedBots) {
+      this.bots = JSON.parse(savedBots);
     }
     return this.bots;
   }
@@ -200,18 +164,9 @@ export class MobileMT5AutomationService {
   }
 
   async openMT5App() {
-    // Deep link to MT5 mobile app
-    try {
-      await Browser.open({ url: 'mt5://open' });
-    } catch (error) {
-      // Fallback to Play Store/App Store
-      const isAndroid = Capacitor.getPlatform() === 'android';
-      const storeUrl = isAndroid 
-        ? 'https://play.google.com/store/apps/details?id=net.metaquotes.metatrader5'
-        : 'https://apps.apple.com/app/metatrader-5/id413251709';
-      
-      await Browser.open({ url: storeUrl });
-    }
+    // Open MT5 web trader in a new tab
+    const mt5WebUrl = 'https://trade.mql5.com/trade';
+    window.open(mt5WebUrl, '_blank');
   }
 }
 

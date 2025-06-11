@@ -17,14 +17,11 @@ import {
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { mobileMT5Service, MobileTradingBot } from '@/services/mobile-mt5-automation';
-import { Capacitor } from '@capacitor/core';
 
 const MobileTradingDashboard = () => {
   const [bots, setBots] = useState<MobileTradingBot[]>([]);
-  const [isNativePlatform, setIsNativePlatform] = useState(false);
 
   useEffect(() => {
-    setIsNativePlatform(Capacitor.isNativePlatform());
     initializeMobileService();
   }, []);
 
@@ -66,7 +63,7 @@ const MobileTradingDashboard = () => {
     
     toast({
       title: "Bot Added",
-      description: `${newBot.name} has been added to your mobile trading bots`,
+      description: `${newBot.name} has been added to your trading bots`,
     });
   };
 
@@ -74,38 +71,14 @@ const MobileTradingDashboard = () => {
     await mobileMT5Service.openMT5App();
   };
 
-  if (!isNativePlatform) {
-    return (
-      <Card className="bg-gray-900 border-cyan-500/30">
-        <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
-            <Smartphone className="w-5 h-5 text-cyan-400" />
-            Mobile Trading
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8">
-            <Smartphone className="w-16 h-16 text-gray-500 mx-auto mb-4" />
-            <p className="text-gray-400 mb-4">
-              Mobile automation is only available on native mobile devices
-            </p>
-            <p className="text-gray-500 text-sm">
-              Export this project and build it as a mobile app to access mobile trading features
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
     <div className="space-y-4">
-      {/* Mobile Status Card */}
+      {/* Web Trading Status Card */}
       <Card className="bg-gradient-to-br from-gray-900 via-gray-800 to-black border-cyan-500/30">
         <CardHeader>
           <CardTitle className="text-white flex items-center gap-2">
             <Smartphone className="w-5 h-5 text-cyan-400" />
-            Mobile Trading Dashboard
+            Web Trading Dashboard
             <Badge variant="default" className="ml-auto bg-green-500">
               ACTIVE
             </Badge>
@@ -138,7 +111,7 @@ const MobileTradingDashboard = () => {
               className="flex-1 bg-cyan-600 hover:bg-cyan-500"
             >
               <ExternalLink className="w-4 h-4 mr-2" />
-              Open MT5 App
+              Open MT5 WebTrader
             </Button>
             
             <Button
@@ -152,19 +125,19 @@ const MobileTradingDashboard = () => {
         </CardContent>
       </Card>
 
-      {/* Mobile Bots List */}
+      {/* Trading Bots List */}
       <Card className="bg-gradient-to-br from-gray-900 via-gray-800 to-black border-cyan-500/30">
         <CardHeader>
           <CardTitle className="text-white flex items-center gap-2">
             <Settings className="w-5 h-5 text-cyan-400" />
-            Mobile Trading Bots
+            Trading Bots
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {bots.length === 0 ? (
             <div className="text-center py-8">
               <Smartphone className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-              <p className="text-gray-400">No mobile trading bots configured</p>
+              <p className="text-gray-400">No trading bots configured</p>
               <Button
                 onClick={handleAddBot}
                 className="mt-4 bg-cyan-600 hover:bg-cyan-500"
