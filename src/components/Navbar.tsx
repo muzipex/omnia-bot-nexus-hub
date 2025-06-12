@@ -10,9 +10,9 @@ import { toast } from '@/hooks/use-toast';
 
 const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [authModalOpen, setAuthModalOpen] = useState(false);
+
+  const { user, signOut, setShowAuthModal } = useAuth();
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
-  const { user, signOut } = useAuth();
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, sectionId: string) => {
     e.preventDefault();
@@ -24,7 +24,7 @@ const Navbar: React.FC = () => {
 
   const handleAuthClick = (mode: 'login' | 'signup') => {
     setAuthMode(mode);
-    setAuthModalOpen(true);
+    setShowAuthModal(true);
   };
 
   const handleSignOut = async () => {
@@ -219,11 +219,7 @@ const Navbar: React.FC = () => {
         </div>
       </nav>
 
-      <AuthModal 
-        open={authModalOpen}
-        onOpenChange={setAuthModalOpen}
-        defaultMode={authMode}
-      />
+      <AuthModal />
     </>
   );
 };
