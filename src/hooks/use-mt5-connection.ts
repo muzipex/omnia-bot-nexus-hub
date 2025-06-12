@@ -3,6 +3,7 @@ import { useAuth } from './use-auth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from './use-toast';
 import { useConnectedAccounts } from './use-connected-accounts';
+import { mt5WebApiService } from '@/services/mt5-web-api';
 
 export interface MT5Account {
   id: string;
@@ -47,10 +48,13 @@ interface BridgeStatus {
   autoTradingActive: boolean;
 }
 
+type ConnectionMethod = 'bridge' | 'webapi';
+
 export const useMT5Connection = () => {
   const { user } = useAuth();
   const { accounts, syncAccount } = useConnectedAccounts();
   const [isConnected, setIsConnected] = useState(false);
+  const [connectionMethod, setConnectionMethod] = useState<ConnectionMethod>('bridge');
   const [account, setAccount] = useState<MT5Account | null>(null);
   const [positions, setPositions] = useState<MT5Trade[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -106,16 +110,13 @@ export const useMT5Connection = () => {
         mt5Connected: result.connected
       }));
       
-      if (!result.connected && isConnected) {
+      if (!result.connected && isConnected && connectionMethod === 'bridge') {
         setIsConnected(false);
         toast({
-          title: "MT5 Connection Lost",
-          description: result.error || "Lost connection to MT5",
+          title: "MT5 Bridge Connection Lost",
+          description: result.error || "Lost connection to MT5 bridge. Consider using Web API.",
           variant: "destructive"
         });
-      } else if (result.connected && !isConnected && lastCredentials) {
-        // Try to reconnect if we have credentials
-        await reconnectToMT5();
       }
     } catch (error) {
       setBridgeStatus(prev => ({
@@ -123,23 +124,10 @@ export const useMT5Connection = () => {
         serverRunning: false,
         mt5Connected: false
       }));
-      setIsConnected(false);
-      toast({
-        title: "Bridge Server Error",
-        description: "Unable to reach MT5 bridge server",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const fetchServerLogs = async () => {
-    try {
-      const result = await callMT5API('logs');
-      if (result.success && result.logs) {
-        setServerLogs(result.logs);
+      
+      if (connectionMethod === 'bridge') {
+        console.log('Bridge server not reachable, Web API available as alternative');
       }
-    } catch (error) {
-      console.error('Failed to fetch server logs:', error);
     }
   };
 
@@ -147,28 +135,57 @@ export const useMT5Connection = () => {
     server: string;
     account_number: number;
     password: string;
-  }) => {
+  }, preferredMethod: ConnectionMethod = 'bridge') => {
     setIsLoading(true);
+    setConnectionMethod(preferredMethod);
+    
     try {
-      // First verify bridge is running
-      await checkBridgeStatus();
+      let result;
       
-      if (!bridgeStatus.serverRunning) {
-        throw new Error('MT5 bridge server is not running. Please start the bridge application first.');
+      if (preferredMethod === 'bridge') {
+        // Try bridge first
+        await checkBridgeStatus();
+        
+        if (!bridgeStatus.serverRunning) {
+          console.log('Bridge not available, switching to Web API');
+          setConnectionMethod('webapi');
+          preferredMethod = 'webapi';
+        } else {
+          result = await callMT5API('connect', credentials);
+        }
       }
-
-      const result = await callMT5API('connect', credentials);
       
-      if (result.success) {
-        setAccount(result.account);
+      if (preferredMethod === 'webapi') {
+        // Use Web API
+        result = await mt5WebApiService.connect({
+          server: credentials.server,
+          login: credentials.account_number,
+          password: credentials.password
+        });
+      }
+      
+      if (result?.success) {
+        const accountData = {
+          id: `${credentials.account_number}-${credentials.server}`,
+          account_number: credentials.account_number,
+          server: credentials.server,
+          name: result.account.name,
+          currency: result.account.currency,
+          balance: result.account.balance,
+          equity: result.account.equity,
+          margin: result.account.margin || 0,
+          free_margin: result.account.free_margin || 0,
+          margin_level: result.account.margin_level || 0,
+          leverage: result.account.leverage || 100,
+          is_active: true,
+          last_sync: new Date().toISOString()
+        };
+
+        setAccount(accountData);
         setIsConnected(true);
         setLastCredentials(credentials);
-        setBridgeStatus(prev => ({
-          ...prev,
-          mt5Connected: true
-        }));
 
-        // Add/update account in connected accounts
+        // Update database
         const existingAccount = accounts.find(
           acc => acc.account_number === credentials.account_number && acc.server === credentials.server
         );
@@ -204,12 +221,25 @@ export const useMT5Connection = () => {
 
         toast({
           title: "Connected to MT5",
-          description: `Connected to account ${credentials.account_number}`,
+          description: `Connected via ${connectionMethod.toUpperCase()} to account ${credentials.account_number}`,
         });
+        
         await loadPositions();
       }
     } catch (error) {
       console.error('MT5 connection error:', error);
+      
+      // If bridge failed, try Web API as fallback
+      if (preferredMethod === 'bridge' && connectionMethod === 'bridge') {
+        console.log('Bridge connection failed, trying Web API...');
+        try {
+          await connectToMT5(credentials, 'webapi');
+          return;
+        } catch (webApiError) {
+          console.error('Web API connection also failed:', webApiError);
+        }
+      }
+      
       setIsConnected(false);
       setAccount(null);
       toast({
@@ -234,14 +264,29 @@ export const useMT5Connection = () => {
   }) => {
     setIsLoading(true);
     try {
-      const result = await callMT5API('place_order', orderData);
+      let result;
+      
+      if (connectionMethod === 'bridge') {
+        result = await callMT5API('place_order', orderData);
+      } else {
+        result = await mt5WebApiService.placeOrder({
+          symbol: orderData.symbol,
+          type: orderData.trade_type,
+          volume: orderData.volume,
+          price: orderData.price,
+          stop_loss: orderData.stop_loss,
+          take_profit: orderData.take_profit,
+          comment: orderData.comment
+        });
+      }
+      
       if (result.success) {
         toast({
           title: "Order Placed",
           description: `${orderData.trade_type} ${orderData.volume} lots of ${orderData.symbol}`,
         });
         await loadPositions();
-        return result.trade;
+        return result.trade || { ticket: result.ticket };
       } else {
         throw new Error(result.error || 'Order failed');
       }
@@ -261,7 +306,14 @@ export const useMT5Connection = () => {
   const closeOrder = async (ticket: number, close_price: number, profit: number) => {
     setIsLoading(true);
     try {
-      const result = await callMT5API('close_order', { ticket, close_price, profit });
+      let result;
+      
+      if (connectionMethod === 'bridge') {
+        result = await callMT5API('close_order', { ticket, close_price, profit });
+      } else {
+        result = await mt5WebApiService.closePosition(ticket);
+      }
+      
       if (result.success) {
         toast({
           title: "Order Closed",
@@ -285,61 +337,32 @@ export const useMT5Connection = () => {
     }
   };
 
-  const startAutoTrading = async (settings: any) => {
-    setIsLoading(true);
-    try {
-      const result = await callMT5API('start_auto_trading', settings);
-      if (result.success) {
-        setIsAutoTrading(true);
-        toast({
-          title: "Auto Trading Started",
-          description: `Bot started trading ${settings.symbol} with ${settings.trading_strategy} strategy`,
-        });
-      } else {
-        throw new Error(result.error || 'Failed to start auto trading');
-      }
-    } catch (error) {
-      console.error('Start auto trading error:', error);
-      toast({
-        title: "Auto Trading Failed",
-        description: error instanceof Error ? error.message : "Failed to start auto trading",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const stopAutoTrading = async () => {
-    setIsLoading(true);
-    try {
-      const result = await callMT5API('stop_auto_trading');
-      if (result.success) {
-        setIsAutoTrading(false);
-        toast({
-          title: "Auto Trading Stopped",
-          description: "Trading bot has been stopped",
-        });
-      } else {
-        throw new Error(result.error || 'Failed to stop auto trading');
-      }
-    } catch (error) {
-      console.error('Stop auto trading error:', error);
-      toast({
-        title: "Stop Failed",
-        description: error instanceof Error ? error.message : "Failed to stop auto trading",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const loadAccountInfo = async () => {
     try {
-      const result = await callMT5API('get_account_info');
-      if (result.account) {
-        setAccount(result.account);
+      if (connectionMethod === 'bridge') {
+        const result = await callMT5API('get_account_info');
+        if (result.account) {
+          setAccount(result.account);
+          setIsConnected(true);
+        }
+      } else if (connectionMethod === 'webapi' && mt5WebApiService.isConnected()) {
+        const accountInfo = await mt5WebApiService.getAccountInfo();
+        const accountData = {
+          id: `${accountInfo.login}-${accountInfo.server}`,
+          account_number: accountInfo.login,
+          server: accountInfo.server,
+          name: accountInfo.name,
+          currency: accountInfo.currency,
+          balance: accountInfo.balance,
+          equity: accountInfo.equity,
+          margin: accountInfo.margin,
+          free_margin: accountInfo.free_margin,
+          margin_level: accountInfo.margin_level,
+          leverage: accountInfo.leverage,
+          is_active: true,
+          last_sync: new Date().toISOString()
+        };
+        setAccount(accountData);
         setIsConnected(true);
       }
     } catch (error) {
@@ -350,8 +373,27 @@ export const useMT5Connection = () => {
 
   const loadPositions = async () => {
     try {
-      const result = await callMT5API('get_positions');
-      setPositions(result.positions || []);
+      if (connectionMethod === 'bridge') {
+        const result = await callMT5API('get_positions');
+        setPositions(result.positions || []);
+      } else if (connectionMethod === 'webapi' && mt5WebApiService.isConnected()) {
+        const webApiPositions = await mt5WebApiService.getPositions();
+        const formattedPositions = webApiPositions.map(pos => ({
+          id: pos.ticket.toString(),
+          ticket: pos.ticket,
+          symbol: pos.symbol,
+          trade_type: pos.type,
+          volume: pos.volume,
+          open_price: pos.price_open,
+          close_price: pos.price_current,
+          profit: pos.profit,
+          commission: pos.commission,
+          swap: pos.swap,
+          open_time: new Date().toISOString(),
+          status: 'OPEN'
+        }));
+        setPositions(formattedPositions);
+      }
     } catch (error) {
       console.error('Load positions error:', error);
     }
@@ -373,7 +415,7 @@ export const useMT5Connection = () => {
   }, [user]);
 
   // Auto refresh positions and account info when auto trading is active
- useEffect(() => {
+  useEffect(() => {
     // Check MT5 connection status periodically
     if (isConnected) {
       const connectionCheck = setInterval(async () => {
@@ -480,6 +522,7 @@ export const useMT5Connection = () => {
 
   return {
     isConnected,
+    connectionMethod,
     account,
     positions,
     isLoading,
@@ -492,8 +535,6 @@ export const useMT5Connection = () => {
     loadAccountInfo,
     loadPositions,
     syncTrades,
-    startAutoTrading,
-    stopAutoTrading,
     checkBridgeStatus,
     fetchServerLogs,
   };
