@@ -82,30 +82,35 @@ const MT5BridgeManager = () => {
     addLog('🔄 Connecting to MT5...');
 
     try {
+      // Use correct payload for bridge
       const response = await fetch('http://localhost:8000/connect', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           server: connectionSettings.server,
-          account_number: parseInt(connectionSettings.account),
+          account_number: Number(connectionSettings.account),
           password: connectionSettings.password
         })
       });
 
       const data = await response.json();
-      
       if (data.success) {
         setBridgeStatus(prev => ({ ...prev, mt5_connected: true }));
         addLog('✅ MT5 connection successful');
         addLog(`📊 Account: ${data.account_info.name} | Balance: ${data.account_info.currency} ${data.account_info.balance}`);
-        
         toast({
           title: "Connected to MT5",
           description: `Successfully connected to ${data.account_info.name}`,
           className: "bg-green-500 text-white"
         });
       } else {
-        throw new Error(data.error || 'Connection failed');
+        // Show error from bridge
+        addLog(`❌ MT5 connection failed: ${data.error}`);
+        toast({
+          title: "Connection Failed",
+          description: data.error || 'Unknown error',
+          variant: "destructive"
+        });
       }
     } catch (error) {
       addLog(`❌ MT5 connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
