@@ -186,6 +186,23 @@ const MT5BridgeManager = () => {
 
   const clearLogs = () => setLogs([]);
 
+  const refreshStatus = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/status');
+      const data = await response.json();
+      
+      setBridgeStatus(prev => ({
+        ...prev,
+        mt5_connected: data.mt5_connected,
+        auto_trading: data.auto_trading_active
+      }));
+      
+      addLog('📊 Status refreshed');
+    } catch (error) {
+      addLog('❌ Failed to refresh status');
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Bridge Status Card */}
@@ -326,7 +343,7 @@ const MT5BridgeManager = () => {
               </Button>
               
               <Button
-                onClick={checkBridgeStatus}
+                onClick={refreshStatus}
                 variant="outline"
                 className="border-cyan-500 text-cyan-400 hover:bg-cyan-500 hover:text-white"
               >
