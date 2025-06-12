@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,9 +5,10 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Brain, TrendingUp, Shield, AlertTriangle, Target, Zap } from 'lucide-react';
-import { aiTradingEngine } from '@/services/ai-trading-engine';
-import { riskManager } from '@/services/risk-management';
+import { createClient } from '@supabase/supabase-js';
 import { toast } from '@/hooks/use-toast';
+
+const supabase = createClient('https://your-supabase-url', 'your-supabase-key');
 
 const AITradingDashboard = () => {
   const [aiSignals, setAiSignals] = useState<any[]>([]);
@@ -18,29 +18,70 @@ const AITradingDashboard = () => {
   const [sentiment, setSentiment] = useState<any>(null);
 
   useEffect(() => {
-    loadAIData();
-    const interval = setInterval(loadAIData, 30000); // Update every 30 seconds
-    return () => clearInterval(interval);
-  }, []);
+    const fetchAIData = async () => {
+      const { data: signals, error: signalsError } = await supabase
+        .from('ai_signals')
+        .select('*');
 
-  const loadAIData = async () => {
-    try {
-      // Generate AI signals for major pairs
-      const symbols = ['EURUSD', 'GBPUSD', 'USDJPY'];
-      const signals = await Promise.all(
-        symbols.map(symbol => aiTradingEngine.analyzeMarket(symbol))
-      );
-      
-      setAiSignals(signals);
-      setPatterns(aiTradingEngine.getPatterns());
-      setSentiment(aiTradingEngine.getSentiment());
-      
-      // Mock portfolio metrics
-      setRiskMetrics(riskManager.getPortfolioMetrics([], {}));
-    } catch (error) {
-      console.error('Error loading AI data:', error);
-    }
-  };
+      const { data: patternsData, error: patternsError } = await supabase
+        .from('patterns')
+        .select('*');
+
+      const { data: sentimentData, error: sentimentError } = await supabase
+        .from('sentiment')
+        .select('*');
+
+      const { data: riskMetricsData, error: riskMetricsError } = await supabase
+        .from('risk_metrics')
+        .select('*');
+
+      if (signalsError || patternsError || sentimentError || riskMetricsError) {
+        console.error('Error fetching AI data:', signalsError, patternsError, sentimentError, riskMetricsError);
+      } else {
+        setAiSignals(signals);
+        setPatterns(patternsData);
+        setSentiment(sentimentData);
+        setRiskMetrics(riskMetricsData);
+      }
+    };
+
+    fetchAIData();
+
+    const signalsSubscription = supabase
+      .from('ai_signals')
+      .on('UPDATE', payload => {
+        setAiSignals(payload.new);
+      })
+      .subscribe();
+
+    const patternsSubscription = supabase
+      .from('patterns')
+      .on('UPDATE', payload => {
+        setPatterns(payload.new);
+      })
+      .subscribe();
+
+    const sentimentSubscription = supabase
+      .from('sentiment')
+      .on('UPDATE', payload => {
+        setSentiment(payload.new);
+      })
+      .subscribe();
+
+    const riskMetricsSubscription = supabase
+      .from('risk_metrics')
+      .on('UPDATE', payload => {
+        setRiskMetrics(payload.new);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeSubscription(signalsSubscription);
+      supabase.removeSubscription(patternsSubscription);
+      supabase.removeSubscription(sentimentSubscription);
+      supabase.removeSubscription(riskMetricsSubscription);
+    };
+  }, []);
 
   const toggleAITrading = () => {
     setIsAIActive(!isAIActive);

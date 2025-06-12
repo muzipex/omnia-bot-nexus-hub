@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { useConnectedAccounts } from '@/hooks/use-connected-accounts';
 import { Plus, RefreshCw, Wifi, WifiOff, Clock, DollarSign, TrendingUp } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { supabase } from '@/integrations/supabase/client';
 
 const ConnectedAccountsCard: React.FC = () => {
   const { accounts, loading, syncing, addAccount, syncAccount } = useConnectedAccounts();
@@ -18,6 +18,34 @@ const ConnectedAccountsCard: React.FC = () => {
     account_name: '',
     broker: ''
   });
+  const [localAccounts, setLocalAccounts] = useState([]);
+
+  const fetchAccountsFromSupabase = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('mt5_connected_accounts')
+        .select('*');
+
+      if (error) {
+        console.error('Error fetching accounts from Supabase:', error);
+        return [];
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Unexpected error fetching accounts from Supabase:', error);
+      return [];
+    }
+  };
+
+  useEffect(() => {
+    const loadAccounts = async () => {
+      const accounts = await fetchAccountsFromSupabase();
+      setLocalAccounts(accounts);
+    };
+
+    loadAccounts();
+  }, []);
 
   const handleAddAccount = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,7 +75,7 @@ const ConnectedAccountsCard: React.FC = () => {
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
-    
+
     if (diffMins < 1) return 'Just now';
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`;
@@ -103,7 +131,6 @@ const ConnectedAccountsCard: React.FC = () => {
                     value={formData.account_name}
                     onChange={(e) => setFormData(prev => ({ ...prev, account_name: e.target.value }))}
                     className="border-gray-300"
-                    placeholder="My Trading Account"
                   />
                 </div>
                 <div>
@@ -113,10 +140,9 @@ const ConnectedAccountsCard: React.FC = () => {
                     value={formData.broker}
                     onChange={(e) => setFormData(prev => ({ ...prev, broker: e.target.value }))}
                     className="border-gray-300"
-                    placeholder="e.g., FXTM, XM, IC Markets"
                   />
                 </div>
-                <Button type="submit" className="w-full bg-black text-white hover:bg-gray-800">
+                <Button type="submit" className="bg-black text-white hover:bg-gray-800">
                   Add Account
                 </Button>
               </form>
@@ -124,13 +150,13 @@ const ConnectedAccountsCard: React.FC = () => {
           </Dialog>
         </div>
       </CardHeader>
-      <CardContent className="p-6">
+      <CardContent>
         {loading ? (
           <div className="text-center py-8">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-black mx-auto mb-2"></div>
             <p className="text-gray-600">Loading accounts...</p>
           </div>
-        ) : accounts.length === 0 ? (
+        ) : localAccounts.length === 0 ? (
           <div className="text-center py-8">
             <WifiOff className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-600 mb-4">No connected accounts</p>
@@ -138,7 +164,7 @@ const ConnectedAccountsCard: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-4">
-            {accounts.map((account) => (
+            {localAccounts.map((account) => (
               <div key={account.id} className="border border-gray-200 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-3">
                   <div>
@@ -193,21 +219,19 @@ const ConnectedAccountsCard: React.FC = () => {
                       <TrendingUp className="w-4 h-4 mr-1" />
                     </div>
                     <p className="text-sm font-medium text-black">
-                      {formatCurrency(account.equity, account.currency)}
+                      {account.equity}
                     </p>
                     <p className="text-xs text-gray-500">Equity</p>
                   </div>
                   <div className="text-center">
-                    <div className="flex items-center justify-center text-purple-600 mb-1">
-                      <span className="text-sm font-bold">1:{account.leverage}</span>
+                    <div className="flex items-center justify-center text-gray-600 mb-1">
+                      <Clock className="w-4 h-4 mr-1" />
                     </div>
-                    <p className="text-xs text-gray-500">Leverage</p>
+                    <p className="text-sm font-medium text-black">
+                      {formatLastSync(account.last_sync)}
+                    </p>
+                    <p className="text-xs text-gray-500">Last Sync</p>
                   </div>
-                </div>
-                
-                <div className="flex items-center text-xs text-gray-500">
-                  <Clock className="w-3 h-3 mr-1" />
-                  Last sync: {formatLastSync(account.last_sync)}
                 </div>
               </div>
             ))}
