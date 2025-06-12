@@ -1,4 +1,3 @@
-
 import React, { Suspense, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -13,14 +12,14 @@ import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { ThemeProvider } from "@/components/ThemeProvider";
 
-// Lazy load pages
-const Index = React.lazy(() => import("./pages/Index"));
-const Success = React.lazy(() => import("./pages/Success"));
-const NotFound = React.lazy(() => import("./pages/NotFound"));
-const Models = React.lazy(() => import("./pages/Models"));
-const Admin = React.lazy(() => import("./pages/Admin"));
-const Dashboard = React.lazy(() => import("./pages/Dashboard"));
-const Pricing = React.lazy(() => import("./pages/Pricing"));
+// Import pages directly to avoid dynamic import issues
+import Index from "@/pages/Index";
+import Dashboard from "@/pages/Dashboard";
+import Pricing from "@/pages/Pricing";
+import Models from "@/pages/Models";
+import Admin from "@/pages/Admin";
+import Success from "@/pages/Success";
+import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient({
   defaultOptions: {
