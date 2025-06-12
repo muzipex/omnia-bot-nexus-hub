@@ -1,44 +1,44 @@
+
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
-    <loc>https://omniassist.site/</loc>
-    <lastmod>2025-04-29</lastmod>
+    <loc>https://omniabot.com/</loc>
+    <lastmod>2025-06-12</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://omniabot.com/Screenshot%202025-04-28%20025035.png</image:loc>
+      <image:title>OMNIA BOT - AI Trading Robot</image:title>
+      <image:caption>Advanced AI-powered forex trading robot dashboard</image:caption>
+    </image:image>
   </url>
   <url>
-    <loc>https://omniassist.site/about-us</loc>
-    <lastmod>2025-04-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://omniassit.site/contact</loc>
-    <lastmod>2025-04-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://omniabot.com/documentation</loc>
-    <lastmod>2025-04-29</lastmod>
+    <loc>https://omniabot.com/pricing</loc>
+    <lastmod>2025-06-12</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://omniabot.com/success</loc>
-    <lastmod>2025-04-29</lastmod>
-    <changefreq>monthly</changefreq>
+    <loc>https://omniabot.com/models</loc>
+    <lastmod>2025-06-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://omniabot.com/dashboard</loc>
+    <lastmod>2025-06-12</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://omniabot.com/admin</loc>
+    <lastmod>2025-06-12</lastmod>
+    <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://omniabot.com/terms-of-service</loc>
-    <lastmod>2025-04-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://omniabot.com/privacy-policy</loc>
-    <lastmod>2025-04-29</lastmod>
+    <loc>https://omniabot.com/success</loc>
+    <lastmod>2025-06-12</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>

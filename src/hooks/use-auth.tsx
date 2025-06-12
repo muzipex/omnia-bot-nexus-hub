@@ -1,4 +1,3 @@
-
 import { useState, useEffect, createContext, useContext } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session, AuthError } from '@supabase/supabase-js';
@@ -7,6 +6,8 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  showAuthModal: boolean;
+  setShowAuthModal: (show: boolean) => void;
   signUp: (email: string, password: string, metadata?: any) => Promise<{ error: AuthError | null }>;
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signInWithProvider: (provider: 'google' | 'github') => Promise<{ error: AuthError | null }>;
@@ -16,21 +17,37 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+        
+        // Hide auth modal on successful login
+        if (event === 'SIGNED_IN' && session) {
+          setShowAuthModal(false);
+          
+          // Send notification to Telegram if configured
+          setTimeout(async () => {
+            const { telegramBot } = await import('@/services/telegram-bot');
+            await telegramBot.sendUpdate({
+              type: 'account_update',
+              message: `User ${session.user.email} successfully logged in to OMNIA BOT Dashboard`,
+              timestamp: new Date().toISOString()
+            });
+          }, 1000);
+        }
+      }
+    );
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -105,11 +122,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     user,
     session,
     loading,
-    signUp,
+    showAuthModal,
+    setShowAuthModal,
     signIn,
-    signInWithProvider,
+    signUp,
     signOut,
-    resetPassword
+    signInWithProvider,
+    resetPassword,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

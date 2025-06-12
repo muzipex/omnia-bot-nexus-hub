@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useMT5Connection } from '@/hooks/use-mt5-connection';
@@ -8,6 +7,7 @@ import MT5PositionsCard from './mt5/MT5PositionsCard';
 import MT5BridgeManager from './MT5BridgeManager';
 import MobileTradingDashboard from '../mobile/MobileTradingDashboard';
 import AITradingDashboard from './AITradingDashboard';
+import TelegramIntegration from './TelegramIntegration';
 
 const MT5TradingInterface = () => {
   const {
@@ -38,7 +38,7 @@ const MT5TradingInterface = () => {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="ai" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-6 bg-gray-800 border border-gray-700">
+        <TabsList className="grid w-full grid-cols-7 bg-gray-800 border border-gray-700">
           <TabsTrigger 
             value="ai" 
             className="data-[state=active]:bg-cyan-600 data-[state=active]:text-white text-gray-300"
@@ -74,6 +74,12 @@ const MT5TradingInterface = () => {
             className="data-[state=active]:bg-cyan-600 data-[state=active]:text-white text-gray-300"
           >
             Mobile
+          </TabsTrigger>
+          <TabsTrigger 
+            value="telegram" 
+            className="data-[state=active]:bg-cyan-600 data-[state=active]:text-white text-gray-300"
+          >
+            Telegram
           </TabsTrigger>
         </TabsList>
 
@@ -116,6 +122,10 @@ const MT5TradingInterface = () => {
 
         <TabsContent value="mobile">
           <MobileTradingDashboard />
+        </TabsContent>
+
+        <TabsContent value="telegram">
+          <TelegramIntegration />
         </TabsContent>
       </Tabs>
     </div>

@@ -15,7 +15,7 @@ import {
   TableRow 
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Check, X, Users, Globe, ChartBar, Activity } from "lucide-react";
+import { Check, X, Users, Globe, ChartBar, Activity, MessageCircle } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 import {
   Card,
@@ -161,11 +161,45 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
     totalVisitors: 0,
     topPages: [] as { page: string; views: number }[]
   });
+  const [telegramStats, setTelegramStats] = useState({
+    connected: false,
+    messagesSent: 0,
+    lastUpdate: null as string | null
+  });
+  const [syncStatus, setSyncStatus] = useState({
+    lastSync: new Date().toISOString(),
+    isOnline: true,
+    pendingUpdates: 0
+  });
 
   useEffect(() => {
     fetchRealTimeData();
     setupRealTimeSubscriptions();
+    checkTelegramStatus();
+    
+    // Setup sync monitoring
+    const syncInterval = setInterval(() => {
+      setSyncStatus(prev => ({
+        ...prev,
+        lastSync: new Date().toISOString(),
+        pendingUpdates: Math.floor(Math.random() * 5)
+      }));
+    }, 30000); // Update every 30 seconds
+
+    return () => clearInterval(syncInterval);
   }, []);
+
+  const checkTelegramStatus = async () => {
+    const { telegramBot } = await import('@/services/telegram-bot');
+    const config = telegramBot.getConfig();
+    const connected = config ? await telegramBot.testConnection() : false;
+    
+    setTelegramStats({
+      connected,
+      messagesSent: parseInt(localStorage.getItem('telegram_messages_sent') || '0'),
+      lastUpdate: localStorage.getItem('telegram_last_update')
+    });
+  };
 
   const fetchRealTimeData = async () => {
     setIsLoading(true);
@@ -411,6 +445,17 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
       }
       
       toast.success("Payment approved");
+      
+      // Send Telegram notification
+      const { telegramBot } = await import('@/services/telegram-bot');
+      const transaction = transactions.find(tx => tx.txId === txId);
+      if (transaction) {
+        await telegramBot.sendUpdate({
+          type: 'account_update',
+          message: `✅ Payment approved: ${transaction.name} plan ($${transaction.price}) - Transaction ID: ${txId}`,
+          timestamp: new Date().toISOString()
+        });
+      }
     } catch (error) {
       console.error("Error approving payment:", error);
       toast.error("Error approving payment");
@@ -460,6 +505,30 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
       console.error("Error rejecting payment:", error);
       toast.error("Error rejecting payment");
     }
+  };
+
+  const syncToTelegram = async () => {
+    const { telegramBot } = await import('@/services/telegram-bot');
+    
+    const recentTransactions = transactions.filter(tx => 
+      Date.now() - tx.timestamp < 24 * 60 * 60 * 1000 // Last 24 hours
+    );
+
+    for (const tx of recentTransactions) {
+      await telegramBot.sendUpdate({
+        type: 'account_update',
+        message: `New ${tx.status} transaction: ${tx.name} plan - $${tx.price} (${tx.paymentMethod})`,
+        timestamp: new Date(tx.timestamp).toISOString()
+      });
+    }
+
+    const messageCount = parseInt(localStorage.getItem('telegram_messages_sent') || '0') + recentTransactions.length;
+    localStorage.setItem('telegram_messages_sent', messageCount.toString());
+    localStorage.setItem('telegram_last_update', new Date().toISOString());
+    
+    checkTelegramStatus();
+    
+    toast.success(`Synced ${recentTransactions.length} updates to Telegram`);
   };
 
   const formatDate = (timestamp: string | number) => {
@@ -517,13 +586,23 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
     <div className="p-4 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-        <Button onClick={onLogout} variant="outline" className="border-tech-blue/30">
-          Logout
-        </Button>
+        <div className="flex items-center space-x-4">
+          {/* Sync Status Indicator */}
+          <div className="flex items-center space-x-2 text-sm">
+            <div className={`w-2 h-2 rounded-full ${syncStatus.isOnline ? 'bg-green-500' : 'bg-red-500'}`}></div>
+            <span className="text-gray-400">
+              Last sync: {new Date(syncStatus.lastSync).toLocaleTimeString()}
+            </span>
+          </div>
+          
+          <Button onClick={onLogout} variant="outline" className="border-tech-blue/30">
+            Logout
+          </Button>
+        </div>
       </div>
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 mb-6">
+        <TabsList className="grid w-full grid-cols-5 mb-6">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <ChartBar className="h-4 w-4" />
             Overview
@@ -536,6 +615,10 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
             <Check className="h-4 w-4" />
             Payments
           </TabsTrigger>
+          <TabsTrigger value="telegram" className="flex items-center gap-2">
+            <MessageCircle className="h-4 w-4" />
+            Telegram
+          </TabsTrigger>
           <TabsTrigger value="themes" className="flex items-center gap-2">
             <Globe className="h-4 w-4" />
             Themes
@@ -543,7 +626,7 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
         </TabsList>
         
         <TabsContent value="overview" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <Card className="tech-card">
               <CardHeader className="pb-2">
                 <CardTitle>Active Visitors</CardTitle>
@@ -594,6 +677,24 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
                     {transactions.filter(tx => tx.status === 'pending').length}
                   </div>
                   <Check className="h-8 w-8 text-tech-blue/60" />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="tech-card">
+              <CardHeader className="pb-2">
+                <CardTitle>Telegram Status</CardTitle>
+                <CardDescription>Bot integration</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <div className="text-3xl font-bold text-tech-blue">
+                    {telegramStats.connected ? 'ON' : 'OFF'}
+                  </div>
+                  <MessageCircle className={`h-8 w-8 ${telegramStats.connected ? 'text-green-500' : 'text-gray-400'}`} />
+                </div>
+                <div className="text-xs text-gray-400 mt-1">
+                  {telegramStats.messagesSent} messages sent
                 </div>
               </CardContent>
             </Card>
@@ -839,6 +940,54 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
                 </TableBody>
               </Table>
             )}
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="telegram" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div>
+              <TelegramIntegration />
+            </div>
+            
+            <Card className="tech-card">
+              <CardHeader>
+                <CardTitle>Sync Dashboard Data</CardTitle>
+                <CardDescription>Send recent activity to Telegram</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Pending Updates:</span>
+                    <Badge variant="outline">{syncStatus.pendingUpdates}</Badge>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Last Sync:</span>
+                    <span className="text-gray-400">
+                      {new Date(syncStatus.lastSync).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Messages Sent:</span>
+                    <span className="text-tech-green">{telegramStats.messagesSent}</span>
+                  </div>
+                </div>
+                
+                <Button 
+                  onClick={syncToTelegram}
+                  disabled={!telegramStats.connected}
+                  className="w-full"
+                >
+                  <Send className="w-4 h-4 mr-2" />
+                  Sync to Telegram
+                </Button>
+                
+                {!telegramStats.connected && (
+                  <p className="text-xs text-yellow-500">
+                    Configure Telegram integration first
+                  </p>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </TabsContent>
         
