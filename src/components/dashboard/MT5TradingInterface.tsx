@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useMT5Connection } from '@/hooks/use-mt5-connection';
@@ -7,9 +6,8 @@ import MT5AutoTradingCard from './mt5/MT5AutoTradingCard';
 import MT5PositionsCard from './mt5/MT5PositionsCard';
 import MT5BridgeManager from './MT5BridgeManager';
 import MobileTradingDashboard from '../mobile/MobileTradingDashboard';
+import AITradingDashboard from './AITradingDashboard';
 import TelegramIntegration from './TelegramIntegration';
-import BinanceStyleDashboard from './BinanceStyleDashboard';
-import SubscriptionBridgeDownload from './SubscriptionBridgeDownload';
 
 const MT5TradingInterface = () => {
   const {
@@ -39,25 +37,19 @@ const MT5TradingInterface = () => {
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="dashboard" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-8 bg-gray-800 border border-gray-700">
+      <Tabs defaultValue="ai" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-7 bg-gray-800 border border-gray-700">
           <TabsTrigger 
-            value="dashboard" 
+            value="ai" 
             className="data-[state=active]:bg-cyan-600 data-[state=active]:text-white text-gray-300"
           >
-            Dashboard
+            AI Engine
           </TabsTrigger>
           <TabsTrigger 
             value="bridge" 
             className="data-[state=active]:bg-cyan-600 data-[state=active]:text-white text-gray-300"
           >
             Bridge Control
-          </TabsTrigger>
-          <TabsTrigger 
-            value="download" 
-            className="data-[state=active]:bg-cyan-600 data-[state=active]:text-white text-gray-300"
-          >
-            Downloads
           </TabsTrigger>
           <TabsTrigger 
             value="connection" 
@@ -91,16 +83,12 @@ const MT5TradingInterface = () => {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="dashboard">
-          <BinanceStyleDashboard />
+        <TabsContent value="ai">
+          <AITradingDashboard />
         </TabsContent>
 
         <TabsContent value="bridge">
           <MT5BridgeManager />
-        </TabsContent>
-
-        <TabsContent value="download">
-          <SubscriptionBridgeDownload />
         </TabsContent>
 
         <TabsContent value="connection">
