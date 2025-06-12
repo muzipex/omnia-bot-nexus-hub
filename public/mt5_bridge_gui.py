@@ -1,4 +1,3 @@
-
 """
 MT5 Trading Bridge with GUI - FastAPI Server
 This script connects to your local MT5 terminal and provides an API for trading operations.
@@ -103,6 +102,7 @@ async def connect_mt5(request: ConnectionRequest):
         
         if not login_result:
             error_code = mt5.last_error()
+            log_to_gui(f"Login failed: {error_code}")
             log_to_gui(f"Login failed: {error_code}")
             return {"success": False, "error": f"Login failed: {error_code}"}
         

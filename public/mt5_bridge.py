@@ -381,10 +381,23 @@ async def stop_auto_trading():
 
 @app.get("/check_connection")
 async def check_connection():
+    # First check if MT5 is initialized and connected
+    if not mt5.initialize():
+        mt5_connected = False
+        return {
+            "success": True,
+            "connected": False,
+            "error": "MT5 not initialized"
+        }
+    
+    # Check if we have an active account connection
+    account_info = mt5.account_info()
+    is_connected = account_info is not None
+    
     return {
         "success": True,
-        "connected": mt5_connected,
-        "error": None if mt5_connected else "MT5 not connected"
+        "connected": is_connected,
+        "error": None if is_connected else "MT5 not connected"
     }
 
 @app.get("/status")
