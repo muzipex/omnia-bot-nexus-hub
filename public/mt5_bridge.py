@@ -388,8 +388,8 @@ async def get_status():
         "auto_trading_settings": auto_trading_settings
     }
 
-if __name__ == "__main__":
+if __name__ == "__main__":The server will run on http://localhost:8000
     print("Starting MT5 Trading Bridge...")
     print("Server will run on http://localhost:8000")
     print("Make sure MT5 terminal is running and 'Allow automated trading' is enabled")
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
