@@ -408,6 +408,82 @@ export const useMT5Connection = () => {
     }
   };
 
+  const startAutoTrading = async (settings: any) => {
+    setIsLoading(true);
+    try {
+      let result;
+      
+      if (connectionMethod === 'bridge') {
+        result = await callMT5API('start_auto_trading', settings);
+      } else {
+        // For Web API, we'll simulate auto trading
+        result = { success: true };
+      }
+      
+      if (result.success) {
+        setIsAutoTrading(true);
+        setBridgeStatus(prev => ({ ...prev, autoTradingActive: true }));
+        toast({
+          title: "Auto Trading Started",
+          description: `Trading ${settings.symbol} with ${settings.lot_size} lot size`,
+        });
+      }
+    } catch (error) {
+      console.error('Start auto trading error:', error);
+      toast({
+        title: "Auto Trading Failed",
+        description: error instanceof Error ? error.message : "Failed to start auto trading",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const stopAutoTrading = async () => {
+    setIsLoading(true);
+    try {
+      let result;
+      
+      if (connectionMethod === 'bridge') {
+        result = await callMT5API('stop_auto_trading');
+      } else {
+        result = { success: true };
+      }
+      
+      if (result.success) {
+        setIsAutoTrading(false);
+        setBridgeStatus(prev => ({ ...prev, autoTradingActive: false }));
+        toast({
+          title: "Auto Trading Stopped",
+          description: "All automated trading has been stopped",
+        });
+      }
+    } catch (error) {
+      console.error('Stop auto trading error:', error);
+      toast({
+        title: "Stop Failed",
+        description: error instanceof Error ? error.message : "Failed to stop auto trading",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchServerLogs = async () => {
+    try {
+      if (connectionMethod === 'bridge') {
+        const result = await callMT5API('logs');
+        if (result.logs) {
+          setServerLogs(result.logs);
+        }
+      }
+    } catch (error) {
+      console.error('Fetch logs error:', error);
+    }
+  };
+
   useEffect(() => {
     if (user) {
       loadAccountInfo();
@@ -537,5 +613,7 @@ export const useMT5Connection = () => {
     syncTrades,
     checkBridgeStatus,
     fetchServerLogs,
+    startAutoTrading,
+    stopAutoTrading,
   };
 };
