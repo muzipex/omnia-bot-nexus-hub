@@ -1,252 +1,274 @@
+
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { useMT5Connection } from '@/hooks/use-mt5-connection';
 import { useConnectedAccounts } from '@/hooks/use-connected-accounts';
-import { Plus, RefreshCw, Wifi, WifiOff, Clock, DollarSign, TrendingUp } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
+import { Link, CheckCircle, XCircle, TrendingUp, DollarSign, Activity, RefreshCw } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
-const ConnectedAccountsCard: React.FC = () => {
-  const { accounts, loading, syncing, addAccount, syncAccount } = useConnectedAccounts();
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [formData, setFormData] = useState({
-    account_number: '',
-    server: '',
-    account_name: '',
-    broker: ''
-  });
-  const [localAccounts, setLocalAccounts] = useState([]);
+interface AccountMetrics {
+  balance: number;
+  equity: number;
+  margin: number;
+  freeMargin: number;
+  marginLevel: number;
+  leverage: number;
+  profit: number;
+  currency: string;
+}
 
-  const fetchAccountsFromSupabase = async () => {
+const ConnectedAccountsCard = () => {
+  const { isConnected, accountInfo, connect, disconnect, refreshAccount } = useMT5Connection();
+  const { connectedAccounts, refreshAccounts } = useConnectedAccounts();
+  const [isLoading, setIsLoading] = useState(false);
+  const [accountMetrics, setAccountMetrics] = useState<AccountMetrics | null>(null);
+  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+
+  useEffect(() => {
+    if (accountInfo) {
+      setAccountMetrics({
+        balance: accountInfo.balance || 0,
+        equity: accountInfo.equity || 0,
+        margin: accountInfo.margin || 0,
+        freeMargin: accountInfo.free_margin || 0,
+        marginLevel: accountInfo.margin_level || 0,
+        leverage: accountInfo.leverage || 1,
+        profit: (accountInfo.equity || 0) - (accountInfo.balance || 0),
+        currency: accountInfo.currency || 'USD'
+      });
+      setLastUpdate(new Date());
+    }
+  }, [accountInfo]);
+
+  const handleRefresh = async () => {
+    setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('mt5_connected_accounts')
-        .select('*');
-
-      if (error) {
-        console.error('Error fetching accounts from Supabase:', error);
-        return [];
-      }
-
-      return data;
+      await refreshAccount();
+      await refreshAccounts();
+      toast({
+        title: "Accounts Refreshed",
+        description: "Account data has been updated successfully",
+      });
     } catch (error) {
-      console.error('Unexpected error fetching accounts from Supabase:', error);
-      return [];
+      toast({
+        title: "Error",
+        description: "Failed to refresh account data",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  useEffect(() => {
-    const loadAccounts = async () => {
-      const accounts = await fetchAccountsFromSupabase();
-      setLocalAccounts(accounts);
-    };
-
-    loadAccounts();
-  }, []);
-
-  const handleAddAccount = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleConnect = async () => {
+    setIsLoading(true);
     try {
-      await addAccount({
-        account_number: parseInt(formData.account_number),
-        server: formData.server,
-        account_name: formData.account_name || undefined,
-        broker: formData.broker || undefined
+      await connect({
+        server: "MetaQuotes-Demo",
+        login: 123456,
+        password: "password123"
       });
-      setFormData({ account_number: '', server: '', account_name: '', broker: '' });
-      setShowAddForm(false);
     } catch (error) {
-      console.error('Failed to add account:', error);
+      console.error('Connection error:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const formatCurrency = (amount: number, currency: string = 'USD') => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: currency
+      currency: currency,
     }).format(amount);
   };
 
-  const formatLastSync = (lastSync: string) => {
-    const date = new Date(lastSync);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`;
-    return date.toLocaleDateString();
+  const formatPercentage = (value: number) => {
+    return `${value.toFixed(2)}%`;
   };
 
   return (
-    <Card className="bg-white border-gray-200 shadow-sm">
-      <CardHeader className="border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-xl text-black flex items-center gap-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Wifi className="w-5 h-5 text-blue-600" />
+    <Card className="bg-tech-charcoal border-tech-blue/30">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <div>
+          <CardTitle className="text-white">Connected Accounts</CardTitle>
+          <CardDescription className="text-gray-400">
+            Your trading account status and metrics
+          </CardDescription>
+        </div>
+        <Button
+          onClick={handleRefresh}
+          disabled={isLoading}
+          variant="outline"
+          size="sm"
+          className="border-tech-blue/30 text-gray-300 hover:bg-tech-blue/10"
+        >
+          <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* MT5 Account Status */}
+        <div className="flex items-center justify-between p-4 border border-tech-blue/30 rounded-lg">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+              <Activity className="w-5 h-5 text-white" />
             </div>
             <div>
-              <span>Connected Accounts</span>
-              <p className="text-sm font-normal text-gray-500 mt-1">
-                Manage your MT5 trading accounts
+              <p className="text-white font-medium">MetaTrader 5</p>
+              <p className="text-gray-400 text-sm">
+                {isConnected ? `Account ${accountInfo?.login || 'N/A'}` : 'Not connected'}
               </p>
             </div>
-          </CardTitle>
-          <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
-            <DialogTrigger asChild>
-              <Button size="sm" className="bg-black text-white hover:bg-gray-800">
-                <Plus className="w-4 h-4 mr-2" />
-                Add Account
+          </div>
+          <div className="flex items-center space-x-2">
+            <Badge variant={isConnected ? "default" : "secondary"}>
+              {isConnected ? (
+                <>
+                  <CheckCircle className="w-3 h-3 mr-1" />
+                  Connected
+                </>
+              ) : (
+                <>
+                  <XCircle className="w-3 h-3 mr-1" />
+                  Disconnected
+                </>
+              )}
+            </Badge>
+            {!isConnected && (
+              <Button 
+                onClick={handleConnect}
+                disabled={isLoading}
+                size="sm"
+                className="bg-tech-blue hover:bg-tech-blue/80"
+              >
+                <Link className="w-4 h-4 mr-1" />
+                Connect
               </Button>
-            </DialogTrigger>
-            <DialogContent className="bg-white border-gray-200">
-              <DialogHeader>
-                <DialogTitle className="text-black">Add MT5 Account</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleAddAccount} className="space-y-4">
-                <div>
-                  <Label htmlFor="account_number" className="text-black">Account Number</Label>
-                  <Input
-                    id="account_number"
-                    type="number"
-                    value={formData.account_number}
-                    onChange={(e) => setFormData(prev => ({ ...prev, account_number: e.target.value }))}
-                    className="border-gray-300"
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="server" className="text-black">Server</Label>
-                  <Input
-                    id="server"
-                    value={formData.server}
-                    onChange={(e) => setFormData(prev => ({ ...prev, server: e.target.value }))}
-                    className="border-gray-300"
-                    placeholder="e.g., MetaQuotes-Demo"
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="account_name" className="text-black">Account Name (Optional)</Label>
-                  <Input
-                    id="account_name"
-                    value={formData.account_name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, account_name: e.target.value }))}
-                    className="border-gray-300"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="broker" className="text-black">Broker (Optional)</Label>
-                  <Input
-                    id="broker"
-                    value={formData.broker}
-                    onChange={(e) => setFormData(prev => ({ ...prev, broker: e.target.value }))}
-                    className="border-gray-300"
-                  />
-                </div>
-                <Button type="submit" className="bg-black text-white hover:bg-gray-800">
-                  Add Account
-                </Button>
-              </form>
-            </DialogContent>
-          </Dialog>
+            )}
+          </div>
         </div>
-      </CardHeader>
-      <CardContent>
-        {loading ? (
-          <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-black mx-auto mb-2"></div>
-            <p className="text-gray-600">Loading accounts...</p>
-          </div>
-        ) : localAccounts.length === 0 ? (
-          <div className="text-center py-8">
-            <WifiOff className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600 mb-4">No connected accounts</p>
-            <p className="text-sm text-gray-500">Add your first MT5 account to get started</p>
-          </div>
-        ) : (
+
+        {/* Account Metrics */}
+        {isConnected && accountMetrics && (
           <div className="space-y-4">
-            {localAccounts.map((account) => (
-              <div key={account.id} className="border border-gray-200 rounded-xl p-6 bg-gradient-to-r from-white to-gray-50 hover:shadow-md transition-all duration-200">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-3 h-3 rounded-full ${account.is_connected ? 'bg-green-500' : 'bg-gray-400'}`}></div>
-                    <div>
-                      <h3 className="font-semibold text-black text-lg">
-                        {account.account_name || `Account ${account.account_number}`}
-                      </h3>
-                      <p className="text-sm text-gray-600 font-medium">
-                        {account.account_number} • {account.server}
-                      </p>
-                      {account.broker && (
-                        <p className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full inline-block mt-1">
-                          {account.broker}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge 
-                      variant={account.is_connected ? "default" : "secondary"}
-                      className={account.is_connected 
-                        ? "bg-green-100 text-green-800 border-green-200" 
-                        : "bg-gray-100 text-gray-600 border-gray-200"
-                      }
-                    >
-                      {account.is_connected ? (
-                        <><Wifi className="w-3 h-3 mr-1" />Connected</>
-                      ) : (
-                        <><WifiOff className="w-3 h-3 mr-1" />Disconnected</>
-                      )}
-                    </Badge>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => syncAccount(account.id)}
-                      disabled={syncing}
-                      className="border-gray-300 text-gray-700 hover:bg-gray-50"
-                    >
-                      <RefreshCw className={`w-3 h-3 ${syncing ? 'animate-spin' : ''}`} />
-                    </Button>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-3 gap-4 mb-4">
-                  <div className="text-center p-3 bg-green-50 rounded-lg border border-green-100">
-                    <div className="flex items-center justify-center text-green-600 mb-2">
-                      <DollarSign className="w-5 h-5" />
-                    </div>
-                    <p className="text-lg font-bold text-green-800">
-                      {formatCurrency(account.balance, account.currency)}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-3 bg-tech-dark rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-400 text-xs">Balance</p>
+                    <p className="text-white font-semibold">
+                      {formatCurrency(accountMetrics.balance, accountMetrics.currency)}
                     </p>
-                    <p className="text-xs text-green-600 font-medium">Balance</p>
                   </div>
-                  <div className="text-center p-3 bg-blue-50 rounded-lg border border-blue-100">
-                    <div className="flex items-center justify-center text-blue-600 mb-2">
-                      <TrendingUp className="w-5 h-5" />
-                    </div>
-                    <p className="text-lg font-bold text-blue-800">
-                      {formatCurrency(account.equity, account.currency)}
-                    </p>
-                    <p className="text-xs text-blue-600 font-medium">Equity</p>
-                  </div>
-                  <div className="text-center p-3 bg-gray-50 rounded-lg border border-gray-100">
-                    <div className="flex items-center justify-center text-gray-600 mb-2">
-                      <Clock className="w-5 h-5" />
-                    </div>
-                    <p className="text-sm font-bold text-gray-800">
-                      {formatLastSync(account.last_sync)}
-                    </p>
-                    <p className="text-xs text-gray-600 font-medium">Last Sync</p>
-                  </div>
+                  <DollarSign className="w-4 h-4 text-tech-blue" />
                 </div>
               </div>
+              
+              <div className="p-3 bg-tech-dark rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-400 text-xs">Equity</p>
+                    <p className="text-white font-semibold">
+                      {formatCurrency(accountMetrics.equity, accountMetrics.currency)}
+                    </p>
+                  </div>
+                  <TrendingUp className="w-4 h-4 text-tech-blue" />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-3 bg-tech-dark rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-400 text-xs">Floating P&L</p>
+                    <p className={`font-semibold ${accountMetrics.profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {accountMetrics.profit >= 0 ? '+' : ''}{formatCurrency(accountMetrics.profit, accountMetrics.currency)}
+                    </p>
+                  </div>
+                  {accountMetrics.profit >= 0 ? (
+                    <TrendingUp className="w-4 h-4 text-green-400" />
+                  ) : (
+                    <TrendingUp className="w-4 h-4 text-red-400 rotate-180" />
+                  )}
+                </div>
+              </div>
+              
+              <div className="p-3 bg-tech-dark rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-400 text-xs">Free Margin</p>
+                    <p className="text-white font-semibold">
+                      {formatCurrency(accountMetrics.freeMargin, accountMetrics.currency)}
+                    </p>
+                  </div>
+                  <Activity className="w-4 h-4 text-tech-blue" />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="p-2 bg-tech-dark rounded">
+                <p className="text-gray-400 text-xs">Margin Level</p>
+                <p className="text-white text-sm font-medium">
+                  {formatPercentage(accountMetrics.marginLevel)}
+                </p>
+              </div>
+              <div className="p-2 bg-tech-dark rounded">
+                <p className="text-gray-400 text-xs">Leverage</p>
+                <p className="text-white text-sm font-medium">
+                  1:{accountMetrics.leverage}
+                </p>
+              </div>
+              <div className="p-2 bg-tech-dark rounded">
+                <p className="text-gray-400 text-xs">Used Margin</p>
+                <p className="text-white text-sm font-medium">
+                  {formatCurrency(accountMetrics.margin, accountMetrics.currency)}
+                </p>
+              </div>
+            </div>
+
+            <div className="text-center pt-2 border-t border-tech-blue/30">
+              <p className="text-gray-500 text-xs">
+                Last updated: {lastUpdate.toLocaleTimeString()}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Other Connected Accounts */}
+        {connectedAccounts.length > 0 && (
+          <div className="space-y-2">
+            <h4 className="text-white text-sm font-medium">Other Accounts</h4>
+            {connectedAccounts.map((account, index) => (
+              <div key={index} className="flex items-center justify-between p-3 border border-tech-blue/30 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
+                    <CheckCircle className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-white text-sm font-medium">{account.platform}</p>
+                    <p className="text-gray-400 text-xs">Account {account.accountId}</p>
+                  </div>
+                </div>
+                <Badge variant="default">
+                  Active
+                </Badge>
+              </div>
             ))}
+          </div>
+        )}
+
+        {!isConnected && connectedAccounts.length === 0 && (
+          <div className="text-center py-8">
+            <XCircle className="w-12 h-12 text-gray-500 mx-auto mb-4" />
+            <p className="text-gray-400">No trading accounts connected</p>
+            <p className="text-gray-500 text-sm mt-2">
+              Connect your MT5 account to start trading
+            </p>
           </div>
         )}
       </CardContent>
