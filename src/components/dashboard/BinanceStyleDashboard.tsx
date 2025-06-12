@@ -77,10 +77,14 @@ const BinanceStyleDashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Balance Card */}
         <Card className="lg:col-span-2 bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-white flex items-center gap-2">
-              <Wallet className="w-5 h-5 text-yellow-500" />
-              Portfolio Overview
+          <CardHeader className="flex flex-row items-center justify-between relative overflow-visible">
+            <CardTitle className="text-white flex items-center gap-2 technofuture-title">
+              <span className="relative flex items-center">
+                <Wallet className="w-5 h-5 text-yellow-500 technofuture-icon animate-pulse" />
+                <span className="ml-2 tracking-widest font-extrabold text-transparent bg-gradient-to-r from-yellow-400 via-cyan-400 to-purple-500 bg-clip-text drop-shadow-[0_1.5px_8px_rgba(0,255,255,0.25)] uppercase text-2xl md:text-3xl technofuture-glow">
+                  Portfolio Overview
+                </span>
+              </span>
             </CardTitle>
             <Button
               variant="ghost"
@@ -88,10 +92,36 @@ const BinanceStyleDashboard = () => {
               onClick={() => setHideBalances(!hideBalances)}
               className="text-gray-400 hover:text-white"
             >
-              {hideBalances ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              {hideBalances ? <EyeOff className="w-4 h-4 technofuture-icon" /> : <Eye className="w-4 h-4 technofuture-icon" />}
             </Button>
+            {/* Futuristic SVG/Glow Accent */}
+            <svg className="absolute -top-6 -right-8 w-40 h-20 pointer-events-none opacity-60 technofuture-svg-glow" viewBox="0 0 200 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <ellipse cx="100" cy="40" rx="90" ry="18" fill="url(#glowGradient)" filter="url(#blur)" />
+              <defs>
+                <linearGradient id="glowGradient" x1="0" y1="40" x2="200" y2="40" gradientUnits="userSpaceOnUse">
+                  <stop stopColor="#00FFF0" />
+                  <stop offset="0.5" stopColor="#FFD600" />
+                  <stop offset="1" stopColor="#A259FF" />
+                </linearGradient>
+                <filter id="blur" x="-20" y="-20" width="240" height="120" filterUnits="userSpaceOnUse">
+                  <feGaussianBlur stdDeviation="12" />
+                </filter>
+              </defs>
+            </svg>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-6 technofuture-bg relative">
+            {/* Decorative grid lines for tech look */}
+            <div className="absolute inset-0 pointer-events-none z-0">
+              <svg width="100%" height="100%" className="opacity-20" style={{position:'absolute',top:0,left:0}}>
+                <defs>
+                  <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#00FFF0" strokeWidth="0.5" />
+                  </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#grid)" />
+              </svg>
+            </div>
+            {/* End grid lines */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <p className="text-gray-400 text-sm">Total Balance</p>
