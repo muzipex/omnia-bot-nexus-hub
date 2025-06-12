@@ -27,7 +27,6 @@ export const useCryptoPayment = () => {
     if (submitting) return;
     
     setSubmitting(true);
-    toast.loading("Submitting transaction for verification...");
     
     try {
       // First check database connection
@@ -38,45 +37,58 @@ export const useCryptoPayment = () => {
       const existingTx = pendingTransactions.find((tx: any) => tx.txId === transactionId);
       
       if (!existingTx) {
-        toast.error("Transaction not found. Please try again.");
-        setSubmitting(false);
-        return;
+        // Create a new transaction entry
+        const newTransaction = {
+          txId: transactionId,
+          planId: 'premium', // Default plan
+          price: 499, // Default price
+          name: 'Premium Plan',
+          timestamp: new Date().toISOString(),
+          status: 'pending',
+          payment_method: 'USDT'
+        };
+        
+        // Save to localStorage
+        const updatedTransactions = [...pendingTransactions, newTransaction];
+        localStorage.setItem('pending_crypto_transactions', JSON.stringify(updatedTransactions));
       }
 
       // If connected to database, store the transaction in Supabase
       if (isConnected) {
         try {
+          const txToSubmit = existingTx || {
+            txId: transactionId,
+            planId: 'premium',
+            price: 499,
+            name: 'Premium Plan',
+            timestamp: new Date().toISOString()
+          };
+
           const { error } = await supabase
             .from('transactions')
             .insert([{
-              tx_id: existingTx.txId,
-              plan_id: existingTx.planId,
-              price: existingTx.price,
-              name: existingTx.name,
-              timestamp: new Date(existingTx.timestamp).toISOString(),
+              tx_id: txToSubmit.txId,
+              plan_id: txToSubmit.planId,
+              price: txToSubmit.price,
+              name: txToSubmit.name,
+              timestamp: new Date(txToSubmit.timestamp).toISOString(),
               status: 'pending',
               payment_method: 'USDT'
             }]);
 
           if (error) {
             console.error("Error saving transaction to Supabase:", error);
-            toast.warning("Using local storage due to database issues", {
-              description: "Your transaction will be verified when connectivity is restored."
-            });
+            toast.warning("Transaction saved locally - will sync when online");
           } else {
             toast.success("Transaction submitted for admin verification!");
           }
         } catch (error) {
           console.error("Transaction submission error:", error);
-          toast.warning("Using local storage due to database issues", {
-            description: "Your transaction will be verified when connectivity is restored."
-          });
+          toast.warning("Transaction saved locally - will sync when online");
         }
       } else {
         // Offline mode notification
-        toast.warning("Operating in offline mode", {
-          description: "Your transaction will be synced when connectivity is restored."
-        });
+        toast.warning("Transaction saved locally - will sync when online");
       }
       
       // Navigate to a thank you page

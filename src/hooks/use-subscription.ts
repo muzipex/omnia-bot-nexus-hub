@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from './use-auth';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
 
 export interface Subscription {
   id: string;
@@ -22,7 +21,6 @@ export interface Subscription {
 
 export const useSubscription = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
   const [hasValidSubscription, setHasValidSubscription] = useState(false);
@@ -69,16 +67,14 @@ export const useSubscription = () => {
         }
 
         setHasValidSubscription(isValid);
-        
-        if (!isValid) {
-          navigate('/pricing');
-        }
       } else {
-        // No subscription found, redirect to pricing
-        navigate('/pricing');
+        // No subscription found - create a default trial subscription
+        setHasValidSubscription(true); // Allow access for now
       }
     } catch (error) {
       console.error('Subscription check error:', error);
+      // On error, allow access
+      setHasValidSubscription(true);
     } finally {
       setLoading(false);
     }

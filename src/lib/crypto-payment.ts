@@ -9,6 +9,21 @@ export const initializeUSDTPayment = (paymentData: {
   planId: string;
 }) => {
   const txId = `crypto_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  
+  // Save transaction details to localStorage for later submission
+  const pendingTransactions = JSON.parse(localStorage.getItem('pending_crypto_transactions') || '[]');
+  const newTransaction = {
+    txId,
+    planId: paymentData.planId,
+    price: paymentData.price,
+    name: paymentData.name,
+    timestamp: new Date().toISOString(),
+    status: 'pending'
+  };
+  
+  pendingTransactions.push(newTransaction);
+  localStorage.setItem('pending_crypto_transactions', JSON.stringify(pendingTransactions));
+  
   return {
     address: USDT_ADDRESS,
     amount: paymentData.price,

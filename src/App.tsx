@@ -20,6 +20,7 @@ const NotFound = React.lazy(() => import("./pages/NotFound"));
 const Models = React.lazy(() => import("./pages/Models"));
 const Admin = React.lazy(() => import("./pages/Admin"));
 const Dashboard = React.lazy(() => import("./pages/Dashboard"));
+const Pricing = React.lazy(() => import("./pages/Pricing"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -51,6 +52,7 @@ const App = () => {
                     <Route path="/" element={<Index />} />
                     <Route path="/success" element={<Success />} />
                     <Route path="/models" element={<Models />} />
+                    <Route path="/pricing" element={<Pricing />} />
                     <Route path="/admin" element={<Admin />} />
                     <Route 
                       path="/dashboard" 

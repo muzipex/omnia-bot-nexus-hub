@@ -117,7 +117,7 @@ export class MobileMT5AutomationService {
     this.stopBotInterval(bot.id);
 
     // Set up new periodic trading simulation
-    const intervalId = setInterval(async () => {
+    const intervalId = window.setInterval(async () => {
       if (!bot.isActive) {
         this.stopBotInterval(bot.id);
         return;
