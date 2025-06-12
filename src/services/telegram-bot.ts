@@ -1,4 +1,3 @@
-import { supabase } from '@/integrations/supabase/client';
 
 interface TelegramConfig {
   botToken: string;
@@ -120,59 +119,6 @@ export class TelegramBot {
       return response.ok;
     } catch {
       return false;
-    }
-  }
-
-  async saveConfigToSupabase(config: TelegramConfig): Promise<boolean> {
-    try {
-      const { error } = await supabase
-        .from('telegram_bot_config')
-        .upsert({
-          bot_token: config.botToken,
-          chat_id: config.chatId,
-          webhook_url: config.webhookUrl || null,
-          updated_at: new Date().toISOString(),
-        });
-
-      if (error) {
-        console.error('Error saving Telegram config to Supabase:', error);
-        return false;
-      }
-
-      console.log('Telegram config saved to Supabase successfully');
-      return true;
-    } catch (error) {
-      console.error('Unexpected error saving Telegram config to Supabase:', error);
-      return false;
-    }
-  }
-
-  async fetchConfigFromSupabase(): Promise<TelegramConfig | null> {
-    try {
-      const { data, error } = await supabase
-        .from('telegram_bot_config')
-        .select('*')
-        .single();
-
-      if (error) {
-        console.error('Error fetching Telegram config from Supabase:', error);
-        return null;
-      }
-
-      if (data) {
-        const config: TelegramConfig = {
-          botToken: data.bot_token,
-          chatId: data.chat_id,
-          webhookUrl: data.webhook_url,
-        };
-        this.config = config;
-        return config;
-      }
-
-      return null;
-    } catch (error) {
-      console.error('Unexpected error fetching Telegram config from Supabase:', error);
-      return null;
     }
   }
 }

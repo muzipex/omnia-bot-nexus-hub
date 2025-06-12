@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -5,10 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Brain, TrendingUp, Shield, AlertTriangle, Target, Zap } from 'lucide-react';
-import { createClient } from '@supabase/supabase-js';
+import { aiTradingEngine } from '@/services/ai-trading-engine';
+import { riskManager } from '@/services/risk-management';
 import { toast } from '@/hooks/use-toast';
-
-const supabase = createClient('https://your-supabase-url', 'your-supabase-key');
 
 const AITradingDashboard = () => {
   const [aiSignals, setAiSignals] = useState<any[]>([]);
@@ -18,90 +18,29 @@ const AITradingDashboard = () => {
   const [sentiment, setSentiment] = useState<any>(null);
 
   useEffect(() => {
-    const fetchAIData = async () => {
-      try {
-        // Generate mock AI data since tables might not exist
-        const mockSignals = [
-          {
-            id: 1,
-            symbol: 'EURUSD',
-            action: 'BUY',
-            confidence: 0.85,
-            created_at: new Date().toISOString()
-          },
-          {
-            id: 2,
-            symbol: 'GBPUSD', 
-            action: 'SELL',
-            confidence: 0.72,
-            created_at: new Date().toISOString()
-          }
-        ];
-
-        const mockPatterns = [
-          {
-            id: 1,
-            pattern_type: 'Double Bottom',
-            symbol: 'EURUSD',
-            confidence: 0.78
-          }
-        ];
-
-        const mockSentiment = {
-          overall: 'bullish',
-          score: 0.65,
-          sources: ['news', 'social']
-        };
-
-        const mockRiskMetrics = {
-          var_95: 2.5,
-          sharpe_ratio: 1.8,
-          max_drawdown: 5.2
-        };
-
-        setAiSignals(mockSignals);
-        setPatterns(mockPatterns);
-        setSentiment(mockSentiment);
-        setRiskMetrics(mockRiskMetrics);
-      } catch (error) {
-        console.error('Error fetching AI data:', error);
-      }
-    };
-
-    fetchAIData();
-    
-    // Refresh data every 60 seconds
-    const interval = setInterval(fetchAIData, 60000);
+    loadAIData();
+    const interval = setInterval(loadAIData, 30000); // Update every 30 seconds
     return () => clearInterval(interval);
-
-    const patternsSubscription = supabase
-      .from('patterns')
-      .on('UPDATE', payload => {
-        setPatterns(payload.new);
-      })
-      .subscribe();
-
-    const sentimentSubscription = supabase
-      .from('sentiment')
-      .on('UPDATE', payload => {
-        setSentiment(payload.new);
-      })
-      .subscribe();
-
-    const riskMetricsSubscription = supabase
-      .from('risk_metrics')
-      .on('UPDATE', payload => {
-        setRiskMetrics(payload.new);
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeSubscription(signalsSubscription);
-      supabase.removeSubscription(patternsSubscription);
-      supabase.removeSubscription(sentimentSubscription);
-      supabase.removeSubscription(riskMetricsSubscription);
-    };
   }, []);
+
+  const loadAIData = async () => {
+    try {
+      // Generate AI signals for major pairs
+      const symbols = ['EURUSD', 'GBPUSD', 'USDJPY'];
+      const signals = await Promise.all(
+        symbols.map(symbol => aiTradingEngine.analyzeMarket(symbol))
+      );
+      
+      setAiSignals(signals);
+      setPatterns(aiTradingEngine.getPatterns());
+      setSentiment(aiTradingEngine.getSentiment());
+      
+      // Mock portfolio metrics
+      setRiskMetrics(riskManager.getPortfolioMetrics([], {}));
+    } catch (error) {
+      console.error('Error loading AI data:', error);
+    }
+  };
 
   const toggleAITrading = () => {
     setIsAIActive(!isAIActive);

@@ -1,4 +1,5 @@
-import React, { useEffect } from "react";
+
+import React, { Suspense, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,14 +13,14 @@ import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { ThemeProvider } from "@/components/ThemeProvider";
 
-// Import pages directly to avoid dynamic import issues
-import Index from "@/pages/Index";
-import Dashboard from "@/pages/Dashboard";
-import Pricing from "@/pages/Pricing";
-import Models from "@/pages/Models";
-import Admin from "@/pages/Admin";
-import Success from "@/pages/Success";
-import NotFound from "@/pages/NotFound";
+// Lazy load pages
+const Index = React.lazy(() => import("./pages/Index"));
+const Success = React.lazy(() => import("./pages/Success"));
+const NotFound = React.lazy(() => import("./pages/NotFound"));
+const Models = React.lazy(() => import("./pages/Models"));
+const Admin = React.lazy(() => import("./pages/Admin"));
+const Dashboard = React.lazy(() => import("./pages/Dashboard"));
+const Pricing = React.lazy(() => import("./pages/Pricing"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -46,22 +47,24 @@ const App = () => {
               <Sonner />
               <FallingCandlesAnimation />
               <BrowserRouter>
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/success" element={<Success />} />
-                  <Route path="/models" element={<Models />} />
-                  <Route path="/pricing" element={<Pricing />} />
-                  <Route path="/admin" element={<Admin />} />
-                  <Route 
-                    path="/dashboard" 
-                    element={
-                      <ProtectedRoute>
-                        <Dashboard />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
+                <Suspense fallback={<DotLoader />}>
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/success" element={<Success />} />
+                    <Route path="/models" element={<Models />} />
+                    <Route path="/pricing" element={<Pricing />} />
+                    <Route path="/admin" element={<Admin />} />
+                    <Route 
+                      path="/dashboard" 
+                      element={
+                        <ProtectedRoute>
+                          <Dashboard />
+                        </ProtectedRoute>
+                      } 
+                    />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </Suspense>
               </BrowserRouter>
             </TooltipProvider>
           </AuthProvider>

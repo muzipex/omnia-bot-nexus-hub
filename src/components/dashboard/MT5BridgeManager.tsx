@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,9 +20,6 @@ import {
   WifiOff
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient('https://your-supabase-url', 'your-supabase-key');
 
 interface BridgeStatus {
   running: boolean;
@@ -47,33 +45,28 @@ const MT5BridgeManager = () => {
     password: ''
   });
 
-  useEffect(() => {
-    const fetchBridgeStatus = async () => {
-      const { data, error } = await supabase
-        .from('bridge_status')
-        .select('*')
-        .single();
-
-      if (error) {
-        console.error('Error fetching bridge status:', error);
+  const checkBridgeStatus = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/status');
+      if (response.ok) {
+        const data = await response.json();
+        setBridgeStatus({
+          running: true,
+          mt5_connected: data.mt5_connected || false,
+          auto_trading: data.auto_trading_active || false,
+          port: 8000,
+          uptime: data.uptime,
+          version: data.version
+        });
+        addLog('✅ Bridge connection successful');
       } else {
-        setBridgeStatus(data);
+        throw new Error('Bridge not responding');
       }
-    };
-
-    fetchBridgeStatus();
-
-    const subscription = supabase
-      .from('bridge_status')
-      .on('UPDATE', payload => {
-        setBridgeStatus(payload.new);
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeSubscription(subscription);
-    };
-  }, []);
+    } catch (error) {
+      setBridgeStatus(prev => ({ ...prev, running: false, mt5_connected: false }));
+      addLog('❌ Bridge connection failed - Make sure MT5 Bridge is running');
+    }
+  };
 
   const connectToMT5 = async () => {
     if (!connectionSettings.server || !connectionSettings.account || !connectionSettings.password) {
@@ -186,22 +179,11 @@ const MT5BridgeManager = () => {
 
   const clearLogs = () => setLogs([]);
 
-  const refreshStatus = async () => {
-    try {
-      const response = await fetch('http://localhost:8000/status');
-      const data = await response.json();
-      
-      setBridgeStatus(prev => ({
-        ...prev,
-        mt5_connected: data.mt5_connected,
-        auto_trading: data.auto_trading_active
-      }));
-      
-      addLog('📊 Status refreshed');
-    } catch (error) {
-      addLog('❌ Failed to refresh status');
-    }
-  };
+  useEffect(() => {
+    checkBridgeStatus();
+    const interval = setInterval(checkBridgeStatus, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -343,7 +325,7 @@ const MT5BridgeManager = () => {
               </Button>
               
               <Button
-                onClick={refreshStatus}
+                onClick={checkBridgeStatus}
                 variant="outline"
                 className="border-cyan-500 text-cyan-400 hover:bg-cyan-500 hover:text-white"
               >
