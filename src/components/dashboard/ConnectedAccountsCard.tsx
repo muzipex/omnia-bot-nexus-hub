@@ -84,11 +84,18 @@ const ConnectedAccountsCard: React.FC = () => {
 
   return (
     <Card className="bg-white border-gray-200 shadow-sm">
-      <CardHeader className="border-b border-gray-100">
+      <CardHeader className="border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-xl text-black flex items-center gap-2">
-            <Wifi className="w-5 h-5" />
-            Connected Accounts
+          <CardTitle className="text-xl text-black flex items-center gap-3">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <Wifi className="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <span>Connected Accounts</span>
+              <p className="text-sm font-normal text-gray-500 mt-1">
+                Manage your MT5 trading accounts
+              </p>
+            </div>
           </CardTitle>
           <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
             <DialogTrigger asChild>
@@ -165,18 +172,23 @@ const ConnectedAccountsCard: React.FC = () => {
         ) : (
           <div className="space-y-4">
             {localAccounts.map((account) => (
-              <div key={account.id} className="border border-gray-200 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <h3 className="font-medium text-black">
-                      {account.account_name || `Account ${account.account_number}`}
-                    </h3>
-                    <p className="text-sm text-gray-600">
-                      {account.account_number} • {account.server}
-                    </p>
-                    {account.broker && (
-                      <p className="text-xs text-gray-500">{account.broker}</p>
-                    )}
+              <div key={account.id} className="border border-gray-200 rounded-xl p-6 bg-gradient-to-r from-white to-gray-50 hover:shadow-md transition-all duration-200">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-3 h-3 rounded-full ${account.is_connected ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                    <div>
+                      <h3 className="font-semibold text-black text-lg">
+                        {account.account_name || `Account ${account.account_number}`}
+                      </h3>
+                      <p className="text-sm text-gray-600 font-medium">
+                        {account.account_number} • {account.server}
+                      </p>
+                      {account.broker && (
+                        <p className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full inline-block mt-1">
+                          {account.broker}
+                        </p>
+                      )}
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge 
@@ -204,33 +216,33 @@ const ConnectedAccountsCard: React.FC = () => {
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-3 gap-4 mb-3">
-                  <div className="text-center">
-                    <div className="flex items-center justify-center text-green-600 mb-1">
-                      <DollarSign className="w-4 h-4 mr-1" />
+                <div className="grid grid-cols-3 gap-4 mb-4">
+                  <div className="text-center p-3 bg-green-50 rounded-lg border border-green-100">
+                    <div className="flex items-center justify-center text-green-600 mb-2">
+                      <DollarSign className="w-5 h-5" />
                     </div>
-                    <p className="text-sm font-medium text-black">
+                    <p className="text-lg font-bold text-green-800">
                       {formatCurrency(account.balance, account.currency)}
                     </p>
-                    <p className="text-xs text-gray-500">Balance</p>
+                    <p className="text-xs text-green-600 font-medium">Balance</p>
                   </div>
-                  <div className="text-center">
-                    <div className="flex items-center justify-center text-blue-600 mb-1">
-                      <TrendingUp className="w-4 h-4 mr-1" />
+                  <div className="text-center p-3 bg-blue-50 rounded-lg border border-blue-100">
+                    <div className="flex items-center justify-center text-blue-600 mb-2">
+                      <TrendingUp className="w-5 h-5" />
                     </div>
-                    <p className="text-sm font-medium text-black">
-                      {account.equity}
+                    <p className="text-lg font-bold text-blue-800">
+                      {formatCurrency(account.equity, account.currency)}
                     </p>
-                    <p className="text-xs text-gray-500">Equity</p>
+                    <p className="text-xs text-blue-600 font-medium">Equity</p>
                   </div>
-                  <div className="text-center">
-                    <div className="flex items-center justify-center text-gray-600 mb-1">
-                      <Clock className="w-4 h-4 mr-1" />
+                  <div className="text-center p-3 bg-gray-50 rounded-lg border border-gray-100">
+                    <div className="flex items-center justify-center text-gray-600 mb-2">
+                      <Clock className="w-5 h-5" />
                     </div>
-                    <p className="text-sm font-medium text-black">
+                    <p className="text-sm font-bold text-gray-800">
                       {formatLastSync(account.last_sync)}
                     </p>
-                    <p className="text-xs text-gray-500">Last Sync</p>
+                    <p className="text-xs text-gray-600 font-medium">Last Sync</p>
                   </div>
                 </div>
               </div>
