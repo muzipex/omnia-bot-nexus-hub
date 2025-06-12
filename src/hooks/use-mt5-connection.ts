@@ -104,33 +104,19 @@ export const useMT5Connection = () => {
       const response = await fetch('http://localhost:8000/check_connection');
       const result = await response.json();
       
-      const isConnectedToBridge = result.success && result.connected;
-      
       setBridgeStatus(prev => ({
         ...prev,
         serverRunning: true,
-        mt5Connected: isConnectedToBridge
+        mt5Connected: result.connected
       }));
       
-      // Update connection status based on bridge status
-      if (connectionMethod === 'bridge') {
-        setIsConnected(isConnectedToBridge);
-        
-        if (!isConnectedToBridge && isConnected) {
-          setAccount(null);
-          toast({
-            title: "MT5 Bridge Connection Lost",
-            description: result.error || "Lost connection to MT5 bridge. Consider using Web API.",
-            variant: "destructive"
-          });
-          
-          // Update all connected accounts status
-          if (user) {
-            await supabase.from('mt5_connected_accounts')
-              .update({ is_connected: false })
-              .eq('user_id', user.id);
-          }
-        }
+      if (!result.connected && isConnected && connectionMethod === 'bridge') {
+        setIsConnected(false);
+        toast({
+          title: "MT5 Bridge Connection Lost",
+          description: result.error || "Lost connection to MT5 bridge. Consider using Web API.",
+          variant: "destructive"
+        });
       }
     } catch (error) {
       setBridgeStatus(prev => ({
@@ -140,16 +126,7 @@ export const useMT5Connection = () => {
       }));
       
       if (connectionMethod === 'bridge') {
-        setIsConnected(false);
-        setAccount(null);
         console.log('Bridge server not reachable, Web API available as alternative');
-        
-        // Update all connected accounts status
-        if (user) {
-          await supabase.from('mt5_connected_accounts')
-            .update({ is_connected: false })
-            .eq('user_id', user.id);
-        }
       }
     }
   };
@@ -602,24 +579,22 @@ export const useMT5Connection = () => {
 
   // Unified status check effect
   useEffect(() => {
-    // Immediate check when component mounts
-    checkBridgeStatus();
-    
-    // Regular status check interval
     const statusCheck = setInterval(async () => {
-      await checkBridgeStatus();
-      
-      if (isConnected) {
-        await Promise.all([
-          fetchServerLogs(),
-          loadPositions(),
-          loadAccountInfo()
-        ]);
+      if (!bridgeStatus.serverRunning) {
+        await checkBridgeStatus();
       }
-    }, 2000); // Check every 2 seconds for more responsive updates
+      if (isConnected) {
+        await fetchServerLogs();
+        await loadPositions();
+        await loadAccountInfo();
+      }
+    }, 3000);
+
+    // Initial check
+    checkBridgeStatus();
 
     return () => clearInterval(statusCheck);
-  }, []);
+  }, [isConnected, bridgeStatus.serverRunning]);
 
   return {
     isConnected,

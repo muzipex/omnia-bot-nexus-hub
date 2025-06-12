@@ -1,3 +1,4 @@
+
 """
 MT5 Trading Bridge with GUI - FastAPI Server
 This script connects to your local MT5 terminal and provides an API for trading operations.
@@ -102,7 +103,6 @@ async def connect_mt5(request: ConnectionRequest):
         
         if not login_result:
             error_code = mt5.last_error()
-            log_to_gui(f"Login failed: {error_code}")
             log_to_gui(f"Login failed: {error_code}")
             return {"success": False, "error": f"Login failed: {error_code}"}
         
@@ -413,28 +413,6 @@ async def get_status():
         "mt5_connected": mt5_connected,
         "auto_trading_active": auto_trading_active,
         "auto_trading_settings": auto_trading_settings
-    }
-
-@app.get("/check_connection")
-async def check_connection():
-    # First check if MT5 is initialized and connected
-    if not mt5.initialize():
-        global mt5_connected
-        mt5_connected = False
-        return {
-            "success": True,
-            "connected": False,
-            "error": "MT5 not initialized"
-        }
-
-    # Check if we have an active account connection
-    account_info = mt5.account_info()
-    is_connected = account_info is not None
-
-    return {
-        "success": True,
-        "connected": is_connected,
-        "error": None if is_connected else "MT5 not connected"
     }
 
 class MT5BridgeGUI:

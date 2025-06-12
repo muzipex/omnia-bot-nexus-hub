@@ -1,3 +1,4 @@
+
 """
 MT5 Trading Bridge - FastAPI Server
 This script connects to your local MT5 terminal and provides an API for trading operations.
@@ -379,27 +380,6 @@ async def stop_auto_trading():
     auto_trading_active = False
     return {"success": True, "message": "Auto trading stopped"}
 
-@app.get("/check_connection")
-async def check_connection():
-    # First check if MT5 is initialized and connected
-    if not mt5.initialize():
-        mt5_connected = False
-        return {
-            "success": True,
-            "connected": False,
-            "error": "MT5 not initialized"
-        }
-    
-    # Check if we have an active account connection
-    account_info = mt5.account_info()
-    is_connected = account_info is not None
-    
-    return {
-        "success": True,
-        "connected": is_connected,
-        "error": None if is_connected else "MT5 not connected"
-    }
-
 @app.get("/status")
 async def get_status():
     return {
@@ -412,4 +392,4 @@ if __name__ == "__main__":
     print("Starting MT5 Trading Bridge...")
     print("Server will run on http://localhost:8000")
     print("Make sure MT5 terminal is running and 'Allow automated trading' is enabled")
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="127.0.0.1", port=8000)
