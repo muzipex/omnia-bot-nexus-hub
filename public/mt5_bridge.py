@@ -1,4 +1,3 @@
-
 """
 MT5 Trading Bridge - FastAPI Server
 This script connects to your local MT5 terminal and provides an API for trading operations.
@@ -380,6 +379,14 @@ async def stop_auto_trading():
     auto_trading_active = False
     return {"success": True, "message": "Auto trading stopped"}
 
+@app.get("/check_connection")
+async def check_connection():
+    return {
+        "success": True,
+        "connected": mt5_connected,
+        "error": None if mt5_connected else "MT5 not connected"
+    }
+
 @app.get("/status")
 async def get_status():
     return {
@@ -388,7 +395,7 @@ async def get_status():
         "auto_trading_settings": auto_trading_settings
     }
 
-if __name__ == "__main__":The server will run on http://localhost:8000
+if __name__ == "__main__":
     print("Starting MT5 Trading Bridge...")
     print("Server will run on http://localhost:8000")
     print("Make sure MT5 terminal is running and 'Allow automated trading' is enabled")
