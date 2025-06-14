@@ -34,9 +34,9 @@ const Dashboard = () => {
         
         {/* Header */}
         <header className="relative z-10 border-b border-white/10 bg-black/20 backdrop-blur-xl">
-          <div className="container mx-auto px-6 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-6">
+          <div className="container mx-auto px-4 sm:px-6 py-4">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center space-x-4 sm:space-x-6">
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-xl flex items-center justify-center">
                     <Bot className="w-6 h-6 text-white" />
@@ -45,35 +45,35 @@ const Dashboard = () => {
                     OMNIA AI
                   </h1>
                 </div>
-                <Badge variant="outline" className="border-purple-500/30 text-purple-300 bg-purple-500/10">
+                <Badge variant="outline" className="hidden md:flex border-purple-500/30 text-purple-300 bg-purple-500/10">
                   <Activity className="w-3 h-3 mr-1" />
                   Live Trading
                 </Badge>
               </div>
               
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2 text-sm text-gray-300">
+              <div className="flex items-center space-x-2 sm:space-x-4">
+                <div className="hidden lg:flex items-center space-x-2 text-sm text-gray-300">
                   <User className="w-4 h-4" />
                   <span>{user?.email}</span>
                 </div>
                 
                 <Button
                   variant="outline"
-                  size="sm"
-                  className="border-white/20 text-gray-300 hover:bg-white/10 hover:text-white backdrop-blur-sm"
+                  size="icon"
+                  className="border-white/20 text-gray-300 hover:bg-white/10 hover:text-white backdrop-blur-sm sm:size-auto sm:px-4 sm:py-2"
                 >
-                  <Settings className="w-4 h-4 mr-2" />
-                  Settings
+                  <Settings className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Settings</span>
                 </Button>
                 
                 <Button
                   variant="outline"
-                  size="sm"
+                  size="icon"
                   onClick={handleSignOut}
-                  className="border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300"
+                  className="border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300 sm:size-auto sm:px-4 sm:py-2"
                 >
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Sign Out
+                  <LogOut className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Sign Out</span>
                 </Button>
               </div>
             </div>
@@ -81,9 +81,9 @@ const Dashboard = () => {
         </header>
 
         {/* Main Content */}
-        <main className="relative z-10 container mx-auto px-6 py-8">
+        <main className="relative z-10 container mx-auto px-4 sm:px-6 py-8">
           <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6 bg-black/30 border border-white/10 backdrop-blur-sm p-1">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-6 bg-black/30 border border-white/10 backdrop-blur-sm p-1 h-auto">
               <TabsTrigger 
                 value="overview" 
                 className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-cyan-600 data-[state=active]:text-white text-gray-300 transition-all duration-300"
@@ -96,7 +96,7 @@ const Dashboard = () => {
                 className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-cyan-600 data-[state=active]:text-white text-gray-300 transition-all duration-300"
               >
                 <Zap className="w-4 h-4 mr-2" />
-                Enhanced Trading
+                Enhanced
               </TabsTrigger>
               <TabsTrigger 
                 value="trading" 

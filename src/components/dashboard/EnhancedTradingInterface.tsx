@@ -1,15 +1,15 @@
-
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, BarChart3, Shield, Activity, Zap, Brain } from 'lucide-react';
+import { TrendingUp, BarChart3, Shield, Activity, Zap, Brain, BrainCircuit } from 'lucide-react';
 import RealTimeMarketData from './RealTimeMarketData';
 import AdvancedCharting from './AdvancedCharting';
 import PerformanceAnalytics from './PerformanceAnalytics';
 import RiskManagementDashboard from './RiskManagementDashboard';
 import { useMT5Connection } from '@/hooks/use-mt5-connection';
+import StrategyBuilder from './StrategyBuilder';
 
 const EnhancedTradingInterface = () => {
   const [activeStrategy, setActiveStrategy] = useState('neural_scalper');
@@ -26,12 +26,38 @@ const EnhancedTradingInterface = () => {
     setActiveStrategy(strategyId);
     if (isAutoTrading) {
       stopAutoTrading();
-      setTimeout(() => startAutoTrading(), 1000);
+      // A real implementation would fetch settings for the new strategy
+      const settings = {
+        symbol: 'EURUSD',
+        lot_size: 0.01,
+        stop_loss_pips: 20,
+        take_profit_pips: 40,
+        max_trades: 5,
+        trading_strategy: strategyId,
+      };
+      setTimeout(() => startAutoTrading(settings), 1000);
+    }
+  };
+
+  const handleToggleAutoTrading = () => {
+    if (isAutoTrading) {
+      stopAutoTrading();
+    } else {
+      // Default settings for now. A real implementation would have a form for this.
+      const settings = {
+        symbol: 'EURUSD',
+        lot_size: 0.01,
+        stop_loss_pips: 20,
+        take_profit_pips: 40,
+        max_trades: 5,
+        trading_strategy: activeStrategy,
+      };
+      startAutoTrading(settings);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900 p-2 md:p-6">
       <div className="space-y-6">
         {/* Header with Strategy Selection */}
         <Card className="bg-gradient-to-br from-gray-900/80 to-gray-800/80 border border-purple-500/20 backdrop-blur-sm">
@@ -73,9 +99,9 @@ const EnhancedTradingInterface = () => {
               ))}
             </div>
             
-            <div className="flex gap-4 mt-6">
+            <div className="flex flex-col sm:flex-row gap-4 mt-6">
               <Button
-                onClick={isAutoTrading ? stopAutoTrading : startAutoTrading}
+                onClick={handleToggleAutoTrading}
                 className={`${
                   isAutoTrading 
                     ? 'bg-red-600 hover:bg-red-700' 
@@ -97,7 +123,7 @@ const EnhancedTradingInterface = () => {
 
         {/* Main Trading Interface */}
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 bg-black/30 border border-white/10 backdrop-blur-sm p-1">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-6 bg-black/30 border border-white/10 backdrop-blur-sm p-1">
             <TabsTrigger 
               value="overview" 
               className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-cyan-600 data-[state=active]:text-white text-gray-300"
@@ -131,6 +157,13 @@ const EnhancedTradingInterface = () => {
               className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-cyan-600 data-[state=active]:text-white text-gray-300"
             >
               Live Data
+            </TabsTrigger>
+            <TabsTrigger 
+              value="builder" 
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-cyan-600 data-[state=active]:text-white text-gray-300"
+            >
+              <BrainCircuit className="w-4 h-4 mr-2" />
+              Builder
             </TabsTrigger>
           </TabsList>
 
@@ -191,6 +224,10 @@ const EnhancedTradingInterface = () => {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          <TabsContent value="builder">
+            <StrategyBuilder />
           </TabsContent>
         </Tabs>
       </div>
