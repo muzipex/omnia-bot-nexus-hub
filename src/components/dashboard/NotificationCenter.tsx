@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Bell, X, TrendingUp, AlertTriangle, CheckCircle, Settings } from 'lucide-react';
-import { useBrowserNotifications } from '@/hooks/use-browser-notifications';
 
 interface Notification {
   id: string;
@@ -18,7 +17,6 @@ interface Notification {
 const NotificationCenter = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const browserNotifications = useBrowserNotifications();
 
   useEffect(() => {
     // Generate some mock notifications
@@ -60,17 +58,18 @@ const NotificationCenter = () => {
     setNotifications(mockNotifications);
     setUnreadCount(mockNotifications.filter(n => !n.read).length);
 
-    // Request notification permission and send test notification
-    if (browserNotifications && typeof browserNotifications === 'object') {
-      const { hasPermission, requestPermission, sendNotification } = browserNotifications;
-      
-      if (!hasPermission()) {
-        requestPermission();
-      } else {
-        sendNotification('OMNIA AI Trading', 'Welcome to your trading dashboard');
-      }
+    // Request browser notification permission
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+          new Notification('OMNIA AI Trading', {
+            body: 'Welcome to your trading dashboard',
+            icon: '/favicon.ico'
+          });
+        }
+      });
     }
-  }, [browserNotifications]);
+  }, []);
 
   const markAsRead = (id: string) => {
     setNotifications(prev => 
