@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Brain, TrendingUp, Shield, AlertTriangle, Target, Zap } from 'lucide-react';
-import { aiTradingEngine } from '@/services/ai-trading-engine';
+import aiTradingEngine from '@/services/ai-trading-engine';
 import { riskManager } from '@/services/risk-management';
 import { toast } from '@/hooks/use-toast';
 

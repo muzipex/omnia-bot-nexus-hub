@@ -1,4 +1,3 @@
-import { MarketData } from "@/hooks/use-mt5-connection";
 
 export interface MarketData {
   symbol: string;
@@ -28,6 +27,69 @@ class AITradingEngine {
 
   public async generateTradingSignals(marketData: MarketData[]): Promise<TradingSignal[]> {
     return this.analyzeMarketConditions(marketData);
+  }
+
+  public async analyzeMarket(symbol: string): Promise<any> {
+    // Mock analysis for development
+    return {
+      symbol,
+      action: Math.random() > 0.5 ? 'BUY' : 'SELL',
+      confidence: Math.random(),
+      entry_price: 1.2000 + Math.random() * 0.1,
+      stop_loss: 1.1950 + Math.random() * 0.05,
+      take_profit: 1.2100 + Math.random() * 0.05,
+      reasoning: [
+        'Technical indicators show bullish momentum',
+        'Volume analysis supports the signal',
+        'Risk-reward ratio is favorable'
+      ]
+    };
+  }
+
+  public getMarketData(symbol: string): any {
+    // Mock market data
+    return {
+      price: 1.2000 + Math.random() * 0.1,
+      change24h: (Math.random() - 0.5) * 0.02,
+      volume: Math.random() * 1000000
+    };
+  }
+
+  public getTechnicalIndicators(symbol: string): any {
+    return {
+      rsi: 30 + Math.random() * 40,
+      macd: Math.random() - 0.5,
+      ema: 1.2000 + Math.random() * 0.1
+    };
+  }
+
+  public getPatterns(): any[] {
+    return [
+      {
+        pattern_name: 'Double Bottom',
+        pattern_type: 'Bullish',
+        confidence: 0.75,
+        historical_accuracy: 0.68
+      },
+      {
+        pattern_name: 'Head and Shoulders',
+        pattern_type: 'Bearish',
+        confidence: 0.82,
+        historical_accuracy: 0.71
+      }
+    ];
+  }
+
+  public getSentiment(): any {
+    return {
+      overall: Math.random() > 0.5 ? 'bullish' : 'bearish',
+      confidence: Math.random(),
+      factors: [
+        'Strong economic data releases',
+        'Positive market sentiment',
+        'Technical breakout patterns'
+      ]
+    };
   }
 
   private async analyzeMarketConditions(marketData: MarketData[]): Promise<TradingSignal[]> {
@@ -139,4 +201,5 @@ class AITradingEngine {
 }
 
 const aiTradingEngine = new AITradingEngine();
+export { aiTradingEngine };
 export default aiTradingEngine;

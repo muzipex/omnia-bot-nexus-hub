@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { TrendingUp, TrendingDown, DollarSign, Wallet, Activity, Eye, EyeOff } from 'lucide-react';
-import { aiTradingEngine } from '@/services/ai-trading-engine';
+import aiTradingEngine from '@/services/ai-trading-engine';
 
 const BinanceStyleDashboard = () => {
   const [portfolioData, setPortfolioData] = useState({

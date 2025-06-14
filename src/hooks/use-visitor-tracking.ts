@@ -143,5 +143,23 @@ export const useVisitorTracking = () => {
     };
   }, []);
 
-  return { sessionId: sessionId.current };
+  const trackPageView = async (path: string) => {
+    try {
+      console.log('Tracking page view:', path);
+      await supabase
+        .from('page_views')
+        .insert({
+          session_id: sessionId.current,
+          page_path: path,
+          referrer: document.referrer || null
+        });
+    } catch (error) {
+      console.error('Error tracking page view:', error);
+    }
+  };
+
+  return { 
+    sessionId: sessionId.current || '',
+    trackPageView
+  };
 };
