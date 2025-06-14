@@ -17,17 +17,29 @@ const TelegramIntegration = () => {
   const [isTesting, setIsTesting] = useState(false);
 
   useEffect(() => {
-    const config = telegramBot.getConfig();
-    if (config) {
-      setBotToken(config.botToken);
-      setChatId(config.chatId);
-      checkConnection();
-    }
+    // Load config from Supabase
+    const loadConfig = async () => {
+      const config = await telegramBot.getConfig();
+      if (config) {
+        setBotToken(config.botToken);
+        setChatId(config.chatId);
+        checkConnection(config);
+      }
+    };
+    loadConfig();
+    // eslint-disable-next-line
   }, []);
 
-  const checkConnection = async () => {
-    const connected = await telegramBot.testConnection();
-    setIsConnected(connected);
+  const checkConnection = async (configOverride?: { botToken: string, chatId: string }) => {
+    setIsConnected(false);
+    // Always check against current input in case user just typed a new token
+    const config = configOverride || { botToken, chatId };
+    if (!config.botToken) {
+      setIsConnected(false);
+      return;
+    }
+    const ok = await telegramBot.testConnection();
+    setIsConnected(ok);
   };
 
   const handleSave = async () => {
@@ -41,15 +53,12 @@ const TelegramIntegration = () => {
     }
 
     setIsLoading(true);
-    
-    telegramBot.setConfig({
-      botToken,
-      chatId
-    });
+
+    await telegramBot.setConfig({ botToken, chatId });
 
     const connected = await telegramBot.testConnection();
     setIsConnected(connected);
-    
+
     if (connected) {
       toast({
         title: "Success",
@@ -62,13 +71,13 @@ const TelegramIntegration = () => {
         variant: "destructive"
       });
     }
-    
+
     setIsLoading(false);
   };
 
   const handleTestMessage = async () => {
     setIsTesting(true);
-    
+
     const success = await telegramBot.sendUpdate({
       type: 'alert',
       message: 'Test message from OMNIA BOT! Your Telegram integration is working perfectly.',
@@ -87,7 +96,7 @@ const TelegramIntegration = () => {
         variant: "destructive"
       });
     }
-    
+
     setIsTesting(false);
   };
 
@@ -148,14 +157,14 @@ const TelegramIntegration = () => {
         </div>
 
         <div className="flex space-x-2">
-          <Button 
-            onClick={handleSave} 
+          <Button
+            onClick={handleSave}
             disabled={isLoading}
             className="flex-1"
           >
             {isLoading ? 'Connecting...' : 'Save & Connect'}
           </Button>
-          
+
           {isConnected && (
             <Button
               variant="outline"

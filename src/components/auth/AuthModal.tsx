@@ -34,8 +34,8 @@ export const AuthModal: React.FC = () => {
       <DialogContent className="sm:max-w-md bg-tech-dark border-tech-blue/30">
         <DialogHeader>
           <DialogTitle className="text-center text-white">
-            {mode === 'login' ? 'Welcome Back' : 
-             mode === 'signup' ? 'Create Account' : 
+            {mode === 'login' ? 'Welcome Back' :
+             mode === 'signup' ? 'Create Account' :
              'Reset Password'}
           </DialogTitle>
           <DialogDescription className="text-center text-gray-400">
@@ -44,20 +44,20 @@ export const AuthModal: React.FC = () => {
              'Enter your email to reset your password'}
           </DialogDescription>
         </DialogHeader>
-        
+
         {mode === 'login' && (
-          <LoginForm 
+          <LoginForm
             onToggleMode={handleToggleMode}
             onForgotPassword={handleForgotPassword}
           />
         )}
-        
+
         {mode === 'signup' && (
           <SignupForm onToggleMode={handleToggleMode} />
         )}
-        
+
         {mode === 'forgot-password' && (
-          <ForgotPasswordForm onBackToLogin={handleBackToLogin} />
+          <ForgotPasswordForm />
         )}
       </DialogContent>
     </Dialog>

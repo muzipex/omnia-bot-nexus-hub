@@ -11,7 +11,7 @@ import TelegramIntegration from '@/components/dashboard/TelegramIntegration';
 import { toast } from '@/hooks/use-toast';
 
 const Admin = () => {
-  const { isAdmin, loading } = useAdminAuth();
+  const { admin, logout } = useAdminAuth();
   const [stats, setStats] = useState({
     totalUsers: 0,
     activeSubscriptions: 0,
@@ -21,15 +21,17 @@ const Admin = () => {
   });
   const [users, setUsers] = useState<any[]>([]);
   const [downloads, setDownloads] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (isAdmin) {
+    if (admin.isAuthenticated) {
       loadAdminData();
     }
-  }, [isAdmin]);
+  // eslint-disable-next-line
+  }, [admin.isAuthenticated]);
 
   const loadAdminData = async () => {
-    // Mock data - replace with real API calls
+    setLoading(true);
     setStats({
       totalUsers: 2547,
       activeSubscriptions: 1823,
@@ -48,6 +50,7 @@ const Admin = () => {
       { id: 1, user: 'user1@example.com', subscription: 'Premium', timestamp: '2024-01-15 10:30', file: 'mt5_bridge_gui.py' },
       { id: 2, user: 'user2@example.com', subscription: 'Basic', timestamp: '2024-01-14 15:22', file: 'mt5_bridge.py' },
     ]);
+    setLoading(false);
   };
 
   const handleSyncTelegram = () => {
@@ -68,7 +71,7 @@ const Admin = () => {
     );
   }
 
-  if (!isAdmin) {
+  if (!admin.isAuthenticated) {
     return (
       <div className="min-h-screen bg-tech-dark flex items-center justify-center">
         <Card className="bg-tech-charcoal border-tech-blue/30">

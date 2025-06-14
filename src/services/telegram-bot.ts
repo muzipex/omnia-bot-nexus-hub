@@ -1,4 +1,6 @@
 
+import { supabase } from "@/integrations/supabase/client";
+
 interface TelegramConfig {
   botToken: string;
   chatId: string;
@@ -18,32 +20,52 @@ interface TradingUpdate {
 export class TelegramBot {
   private config: TelegramConfig | null = null;
 
-  setConfig(config: TelegramConfig) {
-    this.config = config;
-    localStorage.setItem('telegram_config', JSON.stringify(config));
+  async setConfig(config: TelegramConfig) {
+    // Save config to Supabase
+    const { error } = await supabase
+      .from('telegram_bot_configs')
+      .upsert({
+        bot_token: config.botToken,
+        chat_id: config.chatId,
+        // @ts-ignore Next line handled by RLS
+        user_id: (await supabase.auth.getUser()).data.user?.id,
+        updated_at: new Date().toISOString()
+      });
+    if (!error) {
+      this.config = config;
+    }
   }
 
-  getConfig(): TelegramConfig | null {
+  async getConfig(): Promise<TelegramConfig | null> {
     if (this.config) return this.config;
-    
-    const stored = localStorage.getItem('telegram_config');
-    if (stored) {
-      this.config = JSON.parse(stored);
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+    const { data, error } = await supabase
+      .from('telegram_bot_configs')
+      .select("bot_token, chat_id")
+      .eq("user_id", user.id)
+      .single();
+
+    if (data && !error) {
+      this.config = {
+        botToken: data.bot_token,
+        chatId: data.chat_id
+      };
       return this.config;
+    } else {
+      return null;
     }
-    
-    return null;
   }
 
   async sendUpdate(update: TradingUpdate): Promise<boolean> {
-    const config = this.getConfig();
+    const config = await this.getConfig();
     if (!config?.botToken || !config?.chatId) {
       console.log('Telegram not configured, skipping notification');
       return false;
     }
-
     const message = this.formatMessage(update);
-    
+
     try {
       const response = await fetch(`https://api.telegram.org/bot${config.botToken}/sendMessage`, {
         method: 'POST',
@@ -73,30 +95,28 @@ export class TelegramBot {
   private formatMessage(update: TradingUpdate): string {
     const emoji = this.getEmoji(update.type);
     const timestamp = new Date(update.timestamp).toLocaleString();
-    
+
     let message = `${emoji} <b>OMNIA BOT Update</b>\n\n`;
     message += `📊 <b>Type:</b> ${update.type.replace('_', ' ').toUpperCase()}\n`;
     message += `⏰ <b>Time:</b> ${timestamp}\n`;
-    
+
     if (update.symbol) {
       message += `💱 <b>Symbol:</b> ${update.symbol}\n`;
     }
-    
+
     if (update.action) {
       message += `🎯 <b>Action:</b> ${update.action}\n`;
     }
-    
+
     if (update.profit !== undefined) {
       const profitEmoji = update.profit >= 0 ? '💰' : '📉';
       message += `${profitEmoji} <b>P&L:</b> $${update.profit.toFixed(2)}\n`;
     }
-    
+
     if (update.balance !== undefined) {
       message += `💳 <b>Balance:</b> $${update.balance.toFixed(2)}\n`;
     }
-    
     message += `\n📝 <b>Details:</b> ${update.message}`;
-    
     return message;
   }
 
@@ -111,7 +131,7 @@ export class TelegramBot {
   }
 
   async testConnection(): Promise<boolean> {
-    const config = this.getConfig();
+    const config = await this.getConfig();
     if (!config?.botToken) return false;
 
     try {
@@ -124,3 +144,4 @@ export class TelegramBot {
 }
 
 export const telegramBot = new TelegramBot();
+
