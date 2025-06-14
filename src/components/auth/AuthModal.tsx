@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/hooks/use-auth';
@@ -57,7 +56,7 @@ export const AuthModal: React.FC = () => {
         )}
 
         {mode === 'forgot-password' && (
-          <ForgotPasswordForm />
+          <ForgotPasswordForm onBack={handleBackToLogin} />
         )}
       </DialogContent>
     </Dialog>

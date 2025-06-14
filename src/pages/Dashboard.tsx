@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import SubscriptionGuard from '@/components/auth/SubscriptionGuard';
@@ -10,6 +9,10 @@ import NotificationCenter from '@/components/dashboard/NotificationCenter';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { LogOut, Settings, User } from 'lucide-react';
+import HealthSummaryCard from '@/components/dashboard/HealthSummaryCard';
+import TradeJournalCard from '@/components/dashboard/TradeJournalCard';
+import RiskControlCard from '@/components/dashboard/RiskControlCard';
+import MultiAccountCard from '@/components/dashboard/MultiAccountCard';
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
@@ -21,6 +24,22 @@ const Dashboard = () => {
       console.error('Sign out error:', error);
     }
   };
+
+  // Risk control demo state -- ideally persisted in Supabase for real
+  const [maxDailyLoss, setMaxDailyLoss] = React.useState(1000);
+  const [todayPnL, setTodayPnL] = React.useState(0); // Would normally be calculated by summing trades for today.
+  const [tradingLocked, setTradingLocked] = React.useState(false);
+
+  // For multiple connected accounts and positions, assume context/hook provides it (show mock/demo for now)
+  const accounts = [
+    { account_number: 123456, server: "DemoServer", currency: "USD", balance: 15230.35 },
+    { account_number: 654321, server: "LiveServer", currency: "USD", balance: 9734.10 }
+  ];
+  const positions = [
+    { ticket: 101, symbol: "EURUSD", trade_type: "BUY", volume: 1 },
+    { ticket: 102, symbol: "GBPUSD", trade_type: "SELL", volume: 2 }
+  ];
+  const bridgeStatus = { serverRunning: true, mt5Connected: true, autoTradingActive: false };
 
   return (
     <SubscriptionGuard>
@@ -72,6 +91,16 @@ const Dashboard = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left Column */}
             <div className="lg:col-span-2 space-y-6">
+              <HealthSummaryCard status={bridgeStatus} />
+              <MultiAccountCard accounts={accounts} />
+              <RiskControlCard
+                maxDailyLoss={maxDailyLoss}
+                setMaxDailyLoss={setMaxDailyLoss}
+                todayPnL={todayPnL}
+                tradingLocked={tradingLocked}
+                setTradingLocked={setTradingLocked}
+              />
+              <TradeJournalCard positions={positions} />
               <ConnectedAccountsCard />
               <MT5TradingInterface />
               <TradingAnalytics />
