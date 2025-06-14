@@ -5,13 +5,14 @@ import SubscriptionGuard from '@/components/auth/SubscriptionGuard';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { LogOut, Settings, User, TrendingUp, BarChart3, Bot, Activity } from 'lucide-react';
+import { LogOut, Settings, User, TrendingUp, BarChart3, Bot, Activity, Shield, Zap } from 'lucide-react';
 import SubscriptionStatusCard from '@/components/dashboard/SubscriptionStatusCard';
 import NotificationCenter from '@/components/dashboard/NotificationCenter';
 import FuturisticDashboard from '@/components/dashboard/FuturisticDashboard';
 import MT5TradingInterface from '@/components/dashboard/MT5TradingInterface';
 import TradingAnalytics from '@/components/dashboard/TradingAnalytics';
 import AITradingDashboard from '@/components/dashboard/AITradingDashboard';
+import EnhancedTradingInterface from '@/components/dashboard/EnhancedTradingInterface';
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
@@ -82,13 +83,20 @@ const Dashboard = () => {
         {/* Main Content */}
         <main className="relative z-10 container mx-auto px-6 py-8">
           <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4 bg-black/30 border border-white/10 backdrop-blur-sm p-1">
+            <TabsList className="grid w-full grid-cols-6 bg-black/30 border border-white/10 backdrop-blur-sm p-1">
               <TabsTrigger 
                 value="overview" 
                 className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-cyan-600 data-[state=active]:text-white text-gray-300 transition-all duration-300"
               >
                 <TrendingUp className="w-4 h-4 mr-2" />
                 Overview
+              </TabsTrigger>
+              <TabsTrigger 
+                value="enhanced" 
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-cyan-600 data-[state=active]:text-white text-gray-300 transition-all duration-300"
+              >
+                <Zap className="w-4 h-4 mr-2" />
+                Enhanced Trading
               </TabsTrigger>
               <TabsTrigger 
                 value="trading" 
@@ -111,6 +119,13 @@ const Dashboard = () => {
                 <Activity className="w-4 h-4 mr-2" />
                 Advanced
               </TabsTrigger>
+              <TabsTrigger 
+                value="risk" 
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-cyan-600 data-[state=active]:text-white text-gray-300 transition-all duration-300"
+              >
+                <Shield className="w-4 h-4 mr-2" />
+                Risk
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6">
@@ -128,6 +143,10 @@ const Dashboard = () => {
               </div>
             </TabsContent>
 
+            <TabsContent value="enhanced">
+              <EnhancedTradingInterface />
+            </TabsContent>
+
             <TabsContent value="trading">
               <AITradingDashboard />
             </TabsContent>
@@ -138,6 +157,12 @@ const Dashboard = () => {
 
             <TabsContent value="advanced">
               <MT5TradingInterface />
+            </TabsContent>
+
+            <TabsContent value="risk">
+              <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900 p-6 rounded-lg">
+                {/* Risk management content will be rendered by the component */}
+              </div>
             </TabsContent>
           </Tabs>
         </main>
