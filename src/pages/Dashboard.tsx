@@ -1,7 +1,7 @@
+
 import React from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import SubscriptionGuard from '@/components/auth/SubscriptionGuard';
-import OmniaBackground from '@/components/ui/omnia-background';
 import ConnectedAccountsCard from '@/components/dashboard/ConnectedAccountsCard';
 import MT5TradingInterface from '@/components/dashboard/MT5TradingInterface';
 import TradingAnalytics from '@/components/dashboard/TradingAnalytics';
@@ -43,22 +43,21 @@ const Dashboard = () => {
 
   return (
     <SubscriptionGuard>
-      <div className="min-h-screen bg-white relative">
-        <OmniaBackground />
+      <div className="min-h-screen grid-bg noise-effect relative">
         
         {/* Header */}
-        <header className="relative z-10 border-b border-gray-200 bg-white/80 backdrop-blur-sm">
+        <header className="relative z-10 border-b border-tech-blue/20 bg-tech-dark/80 backdrop-blur-sm">
           <div className="container mx-auto px-4 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <h1 className="text-2xl font-black text-black">OMNIA BOT</h1>
-                <Badge variant="outline" className="border-gray-300 text-gray-700">
+                <h1 className="text-2xl font-black text-white">OMNIA BOT</h1>
+                <Badge variant="outline" className="border-tech-blue/30 text-gray-300">
                   Dashboard
                 </Badge>
               </div>
               
               <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2 text-sm text-gray-600">
+                <div className="flex items-center space-x-2 text-sm text-gray-400">
                   <User className="w-4 h-4" />
                   <span>{user?.email}</span>
                 </div>
@@ -66,7 +65,7 @@ const Dashboard = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                  className="border-tech-blue/30 text-gray-300 hover:bg-tech-charcoal/50 hover:text-white"
                 >
                   <Settings className="w-4 h-4 mr-2" />
                   Settings
@@ -76,7 +75,7 @@ const Dashboard = () => {
                   variant="outline"
                   size="sm"
                   onClick={handleSignOut}
-                  className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                  className="border-tech-blue/30 text-gray-300 hover:bg-tech-charcoal/50 hover:text-white"
                 >
                   <LogOut className="w-4 h-4 mr-2" />
                   Sign Out
