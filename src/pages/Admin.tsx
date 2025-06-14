@@ -6,8 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Users, Activity, TrendingUp, DollarSign, Download, Send, MessageSquare } from 'lucide-react';
+import { Send, MessageSquare, Shield, AlertTriangle } from 'lucide-react';
 import TelegramIntegration from '@/components/dashboard/TelegramIntegration';
+import AdminOverviewCards from '@/components/admin/AdminOverviewCards';
 import { toast } from '@/hooks/use-toast';
 
 const Admin = () => {
@@ -18,9 +19,13 @@ const Admin = () => {
     totalRevenue: 0,
     bridgeDownloads: 0,
     telegramConnections: 0,
+    criticalIssues: 0,
+    monthlyGrowth: 0,
+    serverUptime: 0,
   });
   const [users, setUsers] = useState<any[]>([]);
   const [downloads, setDownloads] = useState<any[]>([]);
+  const [criticalAlerts, setCriticalAlerts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -38,18 +43,28 @@ const Admin = () => {
       totalRevenue: 45670,
       bridgeDownloads: 892,
       telegramConnections: 456,
+      criticalIssues: 3,
+      monthlyGrowth: 12.5,
+      serverUptime: 99.8,
     });
 
     setUsers([
-      { id: 1, email: 'user1@example.com', subscription: 'Premium', status: 'Active', downloads: 3 },
-      { id: 2, email: 'user2@example.com', subscription: 'Basic', status: 'Active', downloads: 1 },
-      { id: 3, email: 'user3@example.com', subscription: 'Trial', status: 'Expired', downloads: 0 },
+      { id: 1, email: 'user1@example.com', subscription: 'Premium', status: 'Active', downloads: 3, lastLogin: '2024-01-15' },
+      { id: 2, email: 'user2@example.com', subscription: 'Basic', status: 'Active', downloads: 1, lastLogin: '2024-01-14' },
+      { id: 3, email: 'user3@example.com', subscription: 'Trial', status: 'Expired', downloads: 0, lastLogin: '2024-01-10' },
     ]);
 
     setDownloads([
-      { id: 1, user: 'user1@example.com', subscription: 'Premium', timestamp: '2024-01-15 10:30', file: 'mt5_bridge_gui.py' },
-      { id: 2, user: 'user2@example.com', subscription: 'Basic', timestamp: '2024-01-14 15:22', file: 'mt5_bridge.py' },
+      { id: 1, user: 'user1@example.com', subscription: 'Premium', timestamp: '2024-01-15 10:30', file: 'mt5_bridge_gui.py', ipAddress: '192.168.1.1' },
+      { id: 2, user: 'user2@example.com', subscription: 'Basic', timestamp: '2024-01-14 15:22', file: 'mt5_bridge.py', ipAddress: '192.168.1.2' },
     ]);
+
+    setCriticalAlerts([
+      { id: 1, type: 'Server', message: 'High CPU usage on Bridge Server #2', severity: 'critical', timestamp: '2024-01-15 11:30' },
+      { id: 2, type: 'Security', message: 'Multiple failed login attempts from IP 45.33.22.11', severity: 'warning', timestamp: '2024-01-15 10:45' },
+      { id: 3, type: 'Payment', message: 'Payment processing error for user user3@example.com', severity: 'critical', timestamp: '2024-01-15 09:15' },
+    ]);
+
     setLoading(false);
   };
 
@@ -57,6 +72,14 @@ const Admin = () => {
     toast({
       title: "Telegram Sync Initiated",
       description: "Synchronizing Telegram bot connections across all users",
+    });
+  };
+
+  const handleResolveAlert = (alertId: number) => {
+    setCriticalAlerts(prev => prev.filter(alert => alert.id !== alertId));
+    toast({
+      title: "Alert Resolved",
+      description: "Critical alert has been marked as resolved",
     });
   };
 
@@ -90,70 +113,69 @@ const Admin = () => {
     <div className="min-h-screen bg-tech-dark p-6">
       <div className="container mx-auto space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-white">Admin Dashboard</h1>
-          <Badge className="bg-tech-blue">Admin Panel</Badge>
+          <div className="flex items-center space-x-4">
+            <h1 className="text-3xl font-bold text-white">Admin Control Center</h1>
+            <Badge className="bg-tech-blue">
+              <Shield className="w-3 h-3 mr-1" />
+              Admin Panel
+            </Badge>
+          </div>
+          <Button 
+            onClick={logout}
+            variant="outline" 
+            className="border-tech-blue/30 text-gray-300 hover:bg-tech-charcoal/50"
+          >
+            Logout
+          </Button>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          <Card className="bg-tech-charcoal border-tech-blue/30">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-400">Total Users</CardTitle>
-              <Users className="h-4 w-4 text-tech-blue" />
+        {/* Critical Alerts */}
+        {criticalAlerts.length > 0 && (
+          <Card className="bg-gradient-to-r from-red-900/20 to-orange-900/20 border-red-500/30">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-red-400" />
+                Critical Alerts ({criticalAlerts.length})
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-white">{stats.totalUsers.toLocaleString()}</div>
+              <div className="space-y-2">
+                {criticalAlerts.map((alert) => (
+                  <div key={alert.id} className="flex items-center justify-between p-3 bg-tech-charcoal/50 rounded-lg">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <Badge variant={alert.severity === 'critical' ? 'destructive' : 'secondary'}>
+                          {alert.type}
+                        </Badge>
+                        <span className="text-white text-sm">{alert.message}</span>
+                      </div>
+                      <p className="text-xs text-gray-400 mt-1">{alert.timestamp}</p>
+                    </div>
+                    <Button 
+                      size="sm" 
+                      onClick={() => handleResolveAlert(alert.id)}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      Resolve
+                    </Button>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
+        )}
 
-          <Card className="bg-tech-charcoal border-tech-blue/30">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-400">Active Subscriptions</CardTitle>
-              <Activity className="h-4 w-4 text-tech-green" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-white">{stats.activeSubscriptions.toLocaleString()}</div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-tech-charcoal border-tech-blue/30">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-400">Total Revenue</CardTitle>
-              <DollarSign className="h-4 w-4 text-tech-purple" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-white">${stats.totalRevenue.toLocaleString()}</div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-tech-charcoal border-tech-blue/30">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-400">Bridge Downloads</CardTitle>
-              <Download className="h-4 w-4 text-tech-blue" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-white">{stats.bridgeDownloads.toLocaleString()}</div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-tech-charcoal border-tech-blue/30">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-400">Telegram Connections</CardTitle>
-              <MessageSquare className="h-4 w-4 text-tech-green" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-white">{stats.telegramConnections.toLocaleString()}</div>
-            </CardContent>
-          </Card>
-        </div>
+        {/* Overview Cards */}
+        <AdminOverviewCards stats={stats} />
 
         {/* Tabs */}
         <Tabs defaultValue="users" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4 bg-gray-800 border border-gray-700">
+          <TabsList className="grid w-full grid-cols-5 bg-gray-800 border border-gray-700">
             <TabsTrigger value="users" className="data-[state=active]:bg-cyan-600">Users</TabsTrigger>
             <TabsTrigger value="downloads" className="data-[state=active]:bg-cyan-600">Downloads</TabsTrigger>
             <TabsTrigger value="telegram" className="data-[state=active]:bg-cyan-600">Telegram</TabsTrigger>
             <TabsTrigger value="analytics" className="data-[state=active]:bg-cyan-600">Analytics</TabsTrigger>
+            <TabsTrigger value="system" className="data-[state=active]:bg-cyan-600">System</TabsTrigger>
           </TabsList>
 
           <TabsContent value="users">
@@ -172,6 +194,7 @@ const Admin = () => {
                       <TableHead className="text-gray-400">Subscription</TableHead>
                       <TableHead className="text-gray-400">Status</TableHead>
                       <TableHead className="text-gray-400">Downloads</TableHead>
+                      <TableHead className="text-gray-400">Last Login</TableHead>
                       <TableHead className="text-gray-400">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -190,6 +213,7 @@ const Admin = () => {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-white">{user.downloads}</TableCell>
+                        <TableCell className="text-white">{user.lastLogin}</TableCell>
                         <TableCell>
                           <Button variant="outline" size="sm" className="border-tech-blue/30">
                             Manage
@@ -218,6 +242,7 @@ const Admin = () => {
                       <TableHead className="text-gray-400">User</TableHead>
                       <TableHead className="text-gray-400">Subscription</TableHead>
                       <TableHead className="text-gray-400">File</TableHead>
+                      <TableHead className="text-gray-400">IP Address</TableHead>
                       <TableHead className="text-gray-400">Timestamp</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -231,6 +256,7 @@ const Admin = () => {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-white">{download.file}</TableCell>
+                        <TableCell className="text-white">{download.ipAddress}</TableCell>
                         <TableCell className="text-white">{download.timestamp}</TableCell>
                       </TableRow>
                     ))}
@@ -265,7 +291,7 @@ const Admin = () => {
           <TabsContent value="analytics">
             <Card className="bg-tech-charcoal border-tech-blue/30">
               <CardHeader>
-                <CardTitle className="text-white">Analytics</CardTitle>
+                <CardTitle className="text-white">Analytics Dashboard</CardTitle>
                 <CardDescription className="text-gray-400">
                   Platform usage and performance metrics
                 </CardDescription>
@@ -309,6 +335,54 @@ const Admin = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="system">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card className="bg-tech-charcoal border-tech-blue/30">
+                <CardHeader>
+                  <CardTitle className="text-white">System Health</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Server Uptime</span>
+                    <span className="text-green-400">99.8%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Active Connections</span>
+                    <span className="text-white">1,247</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Memory Usage</span>
+                    <span className="text-yellow-400">72%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">CPU Usage</span>
+                    <span className="text-green-400">45%</span>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-tech-charcoal border-tech-blue/30">
+                <CardHeader>
+                  <CardTitle className="text-white">Quick Actions</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <Button className="w-full bg-tech-blue hover:bg-tech-blue/80">
+                    Restart Bridge Service
+                  </Button>
+                  <Button className="w-full bg-tech-purple hover:bg-tech-purple/80">
+                    Clear Cache
+                  </Button>
+                  <Button className="w-full bg-orange-600 hover:bg-orange-700">
+                    Backup Database
+                  </Button>
+                  <Button variant="destructive" className="w-full">
+                    Emergency Stop
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
       </div>

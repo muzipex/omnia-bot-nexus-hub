@@ -13,6 +13,7 @@ import HealthSummaryCard from '@/components/dashboard/HealthSummaryCard';
 import TradeJournalCard from '@/components/dashboard/TradeJournalCard';
 import RiskControlCard from '@/components/dashboard/RiskControlCard';
 import MultiAccountCard from '@/components/dashboard/MultiAccountCard';
+import SubscriptionStatusCard from '@/components/dashboard/SubscriptionStatusCard';
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
@@ -107,6 +108,7 @@ const Dashboard = () => {
             
             {/* Right Column */}
             <div className="space-y-6">
+              <SubscriptionStatusCard />
               <NotificationCenter />
             </div>
           </div>
