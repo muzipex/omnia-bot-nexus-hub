@@ -2,18 +2,16 @@
 import React from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import SubscriptionGuard from '@/components/auth/SubscriptionGuard';
-import ConnectedAccountsCard from '@/components/dashboard/ConnectedAccountsCard';
-import MT5TradingInterface from '@/components/dashboard/MT5TradingInterface';
-import TradingAnalytics from '@/components/dashboard/TradingAnalytics';
-import NotificationCenter from '@/components/dashboard/NotificationCenter';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { LogOut, Settings, User } from 'lucide-react';
-import HealthSummaryCard from '@/components/dashboard/HealthSummaryCard';
-import TradeJournalCard from '@/components/dashboard/TradeJournalCard';
-import RiskControlCard from '@/components/dashboard/RiskControlCard';
-import MultiAccountCard from '@/components/dashboard/MultiAccountCard';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { LogOut, Settings, User, TrendingUp, BarChart3, Bot, Activity } from 'lucide-react';
 import SubscriptionStatusCard from '@/components/dashboard/SubscriptionStatusCard';
+import NotificationCenter from '@/components/dashboard/NotificationCenter';
+import FuturisticDashboard from '@/components/dashboard/FuturisticDashboard';
+import MT5TradingInterface from '@/components/dashboard/MT5TradingInterface';
+import TradingAnalytics from '@/components/dashboard/TradingAnalytics';
+import AITradingDashboard from '@/components/dashboard/AITradingDashboard';
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
@@ -26,39 +24,34 @@ const Dashboard = () => {
     }
   };
 
-  // Risk control demo state -- ideally persisted in Supabase for real
-  const [maxDailyLoss, setMaxDailyLoss] = React.useState(1000);
-  const [todayPnL, setTodayPnL] = React.useState(0); // Would normally be calculated by summing trades for today.
-  const [tradingLocked, setTradingLocked] = React.useState(false);
-
-  // For multiple connected accounts and positions, assume context/hook provides it (show mock/demo for now)
-  const accounts = [
-    { account_number: 123456, server: "DemoServer", currency: "USD", balance: 15230.35 },
-    { account_number: 654321, server: "LiveServer", currency: "USD", balance: 9734.10 }
-  ];
-  const positions = [
-    { ticket: 101, symbol: "EURUSD", trade_type: "BUY", volume: 1 },
-    { ticket: 102, symbol: "GBPUSD", trade_type: "SELL", volume: 2 }
-  ];
-  const bridgeStatus = { serverRunning: true, mt5Connected: true, autoTradingActive: false };
-
   return (
     <SubscriptionGuard>
-      <div className="min-h-screen grid-bg noise-effect relative">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+        {/* Animated background grid */}
+        <div className="fixed inset-0 bg-grid-white/[0.02] bg-[size:50px_50px]" />
+        <div className="fixed inset-0 bg-gradient-to-r from-purple-500/10 via-transparent to-cyan-500/10" />
         
         {/* Header */}
-        <header className="relative z-10 border-b border-tech-blue/20 bg-tech-dark/80 backdrop-blur-sm">
-          <div className="container mx-auto px-4 py-4">
+        <header className="relative z-10 border-b border-white/10 bg-black/20 backdrop-blur-xl">
+          <div className="container mx-auto px-6 py-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <h1 className="text-2xl font-black text-white">OMNIA BOT</h1>
-                <Badge variant="outline" className="border-tech-blue/30 text-gray-300">
-                  Dashboard
+              <div className="flex items-center space-x-6">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-xl flex items-center justify-center">
+                    <Bot className="w-6 h-6 text-white" />
+                  </div>
+                  <h1 className="text-3xl font-black bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
+                    OMNIA AI
+                  </h1>
+                </div>
+                <Badge variant="outline" className="border-purple-500/30 text-purple-300 bg-purple-500/10">
+                  <Activity className="w-3 h-3 mr-1" />
+                  Live Trading
                 </Badge>
               </div>
               
               <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2 text-sm text-gray-400">
+                <div className="flex items-center space-x-2 text-sm text-gray-300">
                   <User className="w-4 h-4" />
                   <span>{user?.email}</span>
                 </div>
@@ -66,7 +59,7 @@ const Dashboard = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border-tech-blue/30 text-gray-300 hover:bg-tech-charcoal/50 hover:text-white"
+                  className="border-white/20 text-gray-300 hover:bg-white/10 hover:text-white backdrop-blur-sm"
                 >
                   <Settings className="w-4 h-4 mr-2" />
                   Settings
@@ -76,7 +69,7 @@ const Dashboard = () => {
                   variant="outline"
                   size="sm"
                   onClick={handleSignOut}
-                  className="border-tech-blue/30 text-gray-300 hover:bg-tech-charcoal/50 hover:text-white"
+                  className="border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300"
                 >
                   <LogOut className="w-4 h-4 mr-2" />
                   Sign Out
@@ -87,31 +80,66 @@ const Dashboard = () => {
         </header>
 
         {/* Main Content */}
-        <main className="relative z-10 container mx-auto px-4 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Column */}
-            <div className="lg:col-span-2 space-y-6">
-              <HealthSummaryCard status={bridgeStatus} />
-              <MultiAccountCard accounts={accounts} />
-              <RiskControlCard
-                maxDailyLoss={maxDailyLoss}
-                setMaxDailyLoss={setMaxDailyLoss}
-                todayPnL={todayPnL}
-                tradingLocked={tradingLocked}
-                setTradingLocked={setTradingLocked}
-              />
-              <TradeJournalCard positions={positions} />
-              <ConnectedAccountsCard />
-              <MT5TradingInterface />
+        <main className="relative z-10 container mx-auto px-6 py-8">
+          <Tabs defaultValue="overview" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-4 bg-black/30 border border-white/10 backdrop-blur-sm p-1">
+              <TabsTrigger 
+                value="overview" 
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-cyan-600 data-[state=active]:text-white text-gray-300 transition-all duration-300"
+              >
+                <TrendingUp className="w-4 h-4 mr-2" />
+                Overview
+              </TabsTrigger>
+              <TabsTrigger 
+                value="trading" 
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-cyan-600 data-[state=active]:text-white text-gray-300 transition-all duration-300"
+              >
+                <Bot className="w-4 h-4 mr-2" />
+                AI Trading
+              </TabsTrigger>
+              <TabsTrigger 
+                value="analytics" 
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-cyan-600 data-[state=active]:text-white text-gray-300 transition-all duration-300"
+              >
+                <BarChart3 className="w-4 h-4 mr-2" />
+                Analytics
+              </TabsTrigger>
+              <TabsTrigger 
+                value="advanced" 
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-cyan-600 data-[state=active]:text-white text-gray-300 transition-all duration-300"
+              >
+                <Activity className="w-4 h-4 mr-2" />
+                Advanced
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="overview" className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                {/* Main Dashboard */}
+                <div className="lg:col-span-3">
+                  <FuturisticDashboard />
+                </div>
+                
+                {/* Sidebar */}
+                <div className="space-y-6">
+                  <SubscriptionStatusCard />
+                  <NotificationCenter />
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="trading">
+              <AITradingDashboard />
+            </TabsContent>
+
+            <TabsContent value="analytics">
               <TradingAnalytics />
-            </div>
-            
-            {/* Right Column */}
-            <div className="space-y-6">
-              <SubscriptionStatusCard />
-              <NotificationCenter />
-            </div>
-          </div>
+            </TabsContent>
+
+            <TabsContent value="advanced">
+              <MT5TradingInterface />
+            </TabsContent>
+          </Tabs>
         </main>
       </div>
     </SubscriptionGuard>

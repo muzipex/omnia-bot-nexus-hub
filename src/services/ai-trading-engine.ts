@@ -1,5 +1,13 @@
 import { MarketData } from "@/hooks/use-mt5-connection";
 
+export interface MarketData {
+  symbol: string;
+  bid: number;
+  ask: number;
+  close: number;
+  timestamp: Date;
+}
+
 export type SignalType = 'BUY' | 'SELL' | 'HOLD';
 
 export interface TradingSignal {
@@ -37,8 +45,8 @@ class AITradingEngine {
 
   private async generateSignal(marketData: MarketData): Promise<TradingSignal> {
     // Perform technical analysis to generate trading signals
-    const rsi = this.calculateRSI(marketData.close, 14);
-    const macd = this.calculateMACD(marketData.close, 12, 26, 9);
+    const rsi = this.calculateRSI([marketData.close], 14);
+    const macd = this.calculateMACD([marketData.close], 12, 26, 9);
     const macdSignal = macd.macd - macd.signal;
     
     let signal: SignalType = 'HOLD';
@@ -130,4 +138,5 @@ class AITradingEngine {
   }
 }
 
-export default AITradingEngine;
+const aiTradingEngine = new AITradingEngine();
+export default aiTradingEngine;
