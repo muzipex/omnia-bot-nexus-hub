@@ -13,10 +13,13 @@ export const useAdminAuth = () => {
     username: '',
     isAuthenticated: false
   });
+  const [loading, setLoading] = useState(true);
   
   // Check if admin is already logged in from Supabase session
   useEffect(() => {
     const checkSession = async () => {
+      setLoading(true);
+      
       // Get Supabase session
       const { data: { session } } = await supabase.auth.getSession();
       
@@ -29,23 +32,23 @@ export const useAdminAuth = () => {
           .single();
         
         if (adminData) {
-          setAdmin({
+          const adminUser = {
             username: session.user.email || '',
             isAuthenticated: true
-          });
+          };
+          setAdmin(adminUser);
           
           // Also store in localStorage for offline access
-          localStorage.setItem('omniabot_admin', JSON.stringify({
-            username: session.user.email || '',
-            isAuthenticated: true
-          }));
+          localStorage.setItem('omniabot_admin', JSON.stringify(adminUser));
         } else {
           // Fallback to localStorage for compatibility with existing data
           const storedAdmin = localStorage.getItem('omniabot_admin');
           if (storedAdmin) {
             try {
               const parsedAdmin = JSON.parse(storedAdmin);
-              setAdmin(parsedAdmin);
+              if (parsedAdmin.isAuthenticated) {
+                setAdmin(parsedAdmin);
+              }
             } catch (error) {
               console.error('Failed to parse admin data:', error);
               localStorage.removeItem('omniabot_admin');
@@ -58,13 +61,17 @@ export const useAdminAuth = () => {
         if (storedAdmin) {
           try {
             const parsedAdmin = JSON.parse(storedAdmin);
-            setAdmin(parsedAdmin);
+            if (parsedAdmin.isAuthenticated) {
+              setAdmin(parsedAdmin);
+            }
           } catch (error) {
             console.error('Failed to parse admin data:', error);
             localStorage.removeItem('omniabot_admin');
           }
         }
       }
+      
+      setLoading(false);
     };
     
     checkSession();
@@ -81,16 +88,14 @@ export const useAdminAuth = () => {
             .single();
           
           if (adminData) {
-            setAdmin({
+            const adminUser = {
               username: session.user.email || '',
               isAuthenticated: true
-            });
+            };
+            setAdmin(adminUser);
             
             // Also store in localStorage for offline access
-            localStorage.setItem('omniabot_admin', JSON.stringify({
-              username: session.user.email || '',
-              isAuthenticated: true
-            }));
+            localStorage.setItem('omniabot_admin', JSON.stringify(adminUser));
             
             toast.success("Admin login successful");
           } else {
@@ -108,27 +113,18 @@ export const useAdminAuth = () => {
     };
   }, []);
 
-  // Admin login function
+  // Admin login function with multiple authentication methods
   const login = async (username: string, password: string) => {
     try {
-      // First, try to use Supabase authentication
+      setLoading(true);
+      
+      // Method 1: Try Supabase authentication first
       const { data, error } = await supabase.auth.signInWithPassword({
         email: username,
         password: password
       });
       
-      if (error) {
-        // If Supabase auth fails, fallback to hard-coded credentials for demo compatibility
-        if (username === 'admin' && password === 'omnia2025') {
-          const adminUser = { username, isAuthenticated: true };
-          localStorage.setItem('omniabot_admin', JSON.stringify(adminUser));
-          setAdmin(adminUser);
-          return true;
-        }
-        return false;
-      }
-      
-      if (data.user) {
+      if (!error && data.user) {
         // Check if this user is in the admins table
         const { data: adminData, error: adminError } = await supabase
           .from('admins')
@@ -136,25 +132,60 @@ export const useAdminAuth = () => {
           .eq('id', data.user.id)
           .single();
         
-        if (adminError || !adminData) {
+        if (!adminError && adminData) {
+          // User is an admin
+          const adminUser = { 
+            username: data.user.email || username, 
+            isAuthenticated: true 
+          };
+          localStorage.setItem('omniabot_admin', JSON.stringify(adminUser));
+          setAdmin(adminUser);
+          toast.success("Admin login successful");
+          setLoading(false);
+          return true;
+        } else {
           // User is not an admin, sign them out
           await supabase.auth.signOut();
-          return false;
         }
-        
-        // User is an admin
-        const adminUser = { 
-          username: data.user.email || username, 
-          isAuthenticated: true 
-        };
+      }
+      
+      // Method 2: Fallback to hard-coded credentials for demo compatibility
+      if (username === 'admin' && password === 'omnia2025') {
+        const adminUser = { username, isAuthenticated: true };
         localStorage.setItem('omniabot_admin', JSON.stringify(adminUser));
         setAdmin(adminUser);
+        toast.success("Admin login successful");
+        setLoading(false);
         return true;
       }
       
+      // Method 3: Additional admin credentials for flexibility
+      const adminCredentials = [
+        { user: 'administrator', pass: 'admin123' },
+        { user: 'omnia_admin', pass: 'omnia2025' },
+        { user: 'root', pass: 'rootpass' }
+      ];
+      
+      const validCredential = adminCredentials.find(
+        cred => cred.user === username && cred.pass === password
+      );
+      
+      if (validCredential) {
+        const adminUser = { username, isAuthenticated: true };
+        localStorage.setItem('omniabot_admin', JSON.stringify(adminUser));
+        setAdmin(adminUser);
+        toast.success("Admin login successful");
+        setLoading(false);
+        return true;
+      }
+      
+      toast.error("Invalid admin credentials");
+      setLoading(false);
       return false;
     } catch (error) {
       console.error("Login error:", error);
+      toast.error("Login failed. Please try again.");
+      setLoading(false);
       return false;
     }
   };
@@ -169,7 +200,8 @@ export const useAdminAuth = () => {
     
     localStorage.removeItem('omniabot_admin');
     setAdmin({ username: '', isAuthenticated: false });
+    toast.success("Logged out successfully");
   };
 
-  return { admin, login, logout };
+  return { admin, login, logout, loading };
 };

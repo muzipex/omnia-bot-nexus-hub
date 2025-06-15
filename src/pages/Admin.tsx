@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAdminAuth } from '@/hooks/use-admin-auth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,10 +8,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Send, MessageSquare, Shield, AlertTriangle } from 'lucide-react';
 import TelegramIntegration from '@/components/dashboard/TelegramIntegration';
 import AdminOverviewCards from '@/components/admin/AdminOverviewCards';
+import AdminLoginForm from '@/components/auth/AdminLoginForm';
 import { toast } from '@/hooks/use-toast';
 
 const Admin = () => {
-  const { admin, logout } = useAdminAuth();
+  const { admin, logout, loading } = useAdminAuth();
   const [stats, setStats] = useState({
     totalUsers: 0,
     activeSubscriptions: 0,
@@ -83,30 +83,21 @@ const Admin = () => {
     });
   };
 
+  // Show loading spinner while checking authentication
   if (loading) {
     return (
-      <div className="min-h-screen bg-tech-dark flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-tech-blue mx-auto mb-4"></div>
-          <p className="text-gray-400">Loading admin dashboard...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto mb-4"></div>
+          <p className="text-gray-400">Checking authentication...</p>
         </div>
       </div>
     );
   }
 
+  // Show login form if not authenticated
   if (!admin.isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-tech-dark flex items-center justify-center">
-        <Card className="bg-tech-charcoal border-tech-blue/30">
-          <CardHeader>
-            <CardTitle className="text-white">Access Denied</CardTitle>
-            <CardDescription className="text-gray-400">
-              You don't have permission to access this page.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    );
+    return <AdminLoginForm />;
   }
 
   return (

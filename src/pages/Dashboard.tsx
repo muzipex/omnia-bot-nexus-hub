@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import SubscriptionGuard from '@/components/auth/SubscriptionGuard';
@@ -13,6 +12,7 @@ import MT5TradingInterface from '@/components/dashboard/MT5TradingInterface';
 import TradingAnalytics from '@/components/dashboard/TradingAnalytics';
 import AITradingDashboard from '@/components/dashboard/AITradingDashboard';
 import EnhancedTradingInterface from '@/components/dashboard/EnhancedTradingInterface';
+import BotCustomization from '@/components/dashboard/BotCustomization';
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
@@ -83,7 +83,7 @@ const Dashboard = () => {
         {/* Main Content */}
         <main className="relative z-10 container mx-auto px-4 sm:px-6 py-8">
           <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-6 bg-black/30 border border-white/10 backdrop-blur-sm p-1 h-auto">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-7 bg-black/30 border border-white/10 backdrop-blur-sm p-1 h-auto">
               <TabsTrigger 
                 value="overview" 
                 className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-cyan-600 data-[state=active]:text-white text-gray-300 transition-all duration-300"
@@ -97,6 +97,13 @@ const Dashboard = () => {
               >
                 <Zap className="w-4 h-4 mr-2" />
                 Enhanced
+              </TabsTrigger>
+              <TabsTrigger 
+                value="bot-config" 
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-cyan-600 data-[state=active]:text-white text-gray-300 transition-all duration-300"
+              >
+                <Bot className="w-4 h-4 mr-2" />
+                Bot Config
               </TabsTrigger>
               <TabsTrigger 
                 value="trading" 
@@ -145,6 +152,10 @@ const Dashboard = () => {
 
             <TabsContent value="enhanced">
               <EnhancedTradingInterface />
+            </TabsContent>
+
+            <TabsContent value="bot-config">
+              <BotCustomization />
             </TabsContent>
 
             <TabsContent value="trading">
