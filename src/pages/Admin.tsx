@@ -5,14 +5,15 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Send, MessageSquare, Shield, AlertTriangle } from 'lucide-react';
+import { Send, MessageSquare, Shield, AlertTriangle, Check, X, Clock, DollarSign } from 'lucide-react';
 import TelegramIntegration from '@/components/dashboard/TelegramIntegration';
 import AdminOverviewCards from '@/components/admin/AdminOverviewCards';
 import AdminLoginForm from '@/components/auth/AdminLoginForm';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const Admin = () => {
-  const { admin, logout, loading } = useAdminAuth();
+  const { admin, logout, loading: authLoading } = useAdminAuth();
   const [stats, setStats] = useState({
     totalUsers: 0,
     activeSubscriptions: 0,
@@ -26,17 +27,33 @@ const Admin = () => {
   const [users, setUsers] = useState<any[]>([]);
   const [downloads, setDownloads] = useState<any[]>([]);
   const [criticalAlerts, setCriticalAlerts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [dataLoading, setDataLoading] = useState(true);
 
   useEffect(() => {
     if (admin.isAuthenticated) {
       loadAdminData();
     }
-  // eslint-disable-next-line
   }, [admin.isAuthenticated]);
 
   const loadAdminData = async () => {
-    setLoading(true);
+    setDataLoading(true);
+    
+    // Load transactions from Supabase
+    try {
+      const { data: transactionData, error } = await supabase
+        .from('transactions')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (!error && transactionData) {
+        setTransactions(transactionData);
+      }
+    } catch (error) {
+      console.error('Error loading transactions:', error);
+    }
+
+    // Mock data for other sections
     setStats({
       totalUsers: 2547,
       activeSubscriptions: 1823,
@@ -65,7 +82,55 @@ const Admin = () => {
       { id: 3, type: 'Payment', message: 'Payment processing error for user user3@example.com', severity: 'critical', timestamp: '2024-01-15 09:15' },
     ]);
 
-    setLoading(false);
+    setDataLoading(false);
+  };
+
+  const handleApprovePayment = async (transactionId: string) => {
+    try {
+      const { error } = await supabase
+        .from('transactions')
+        .update({ status: 'completed' })
+        .eq('id', transactionId);
+
+      if (!error) {
+        toast({
+          title: "Payment Approved",
+          description: "Transaction has been marked as completed",
+        });
+        loadAdminData(); // Refresh data
+      }
+    } catch (error) {
+      console.error('Error approving payment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to approve payment",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRejectPayment = async (transactionId: string) => {
+    try {
+      const { error } = await supabase
+        .from('transactions')
+        .update({ status: 'rejected' })
+        .eq('id', transactionId);
+
+      if (!error) {
+        toast({
+          title: "Payment Rejected",
+          description: "Transaction has been marked as rejected",
+        });
+        loadAdminData(); // Refresh data
+      }
+    } catch (error) {
+      console.error('Error rejecting payment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to reject payment",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleSyncTelegram = () => {
@@ -83,8 +148,21 @@ const Admin = () => {
     });
   };
 
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return <Badge className="bg-green-600 text-white">Completed</Badge>;
+      case 'pending':
+        return <Badge className="bg-yellow-600 text-white">Pending</Badge>;
+      case 'rejected':
+        return <Badge className="bg-red-600 text-white">Rejected</Badge>;
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
+    }
+  };
+
   // Show loading spinner while checking authentication
-  if (loading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
         <div className="text-center">
@@ -160,14 +238,98 @@ const Admin = () => {
         <AdminOverviewCards stats={stats} />
 
         {/* Tabs */}
-        <Tabs defaultValue="users" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-5 bg-gray-800 border border-gray-700">
+        <Tabs defaultValue="payments" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-6 bg-gray-800 border border-gray-700">
+            <TabsTrigger value="payments" className="data-[state=active]:bg-cyan-600">Payments</TabsTrigger>
             <TabsTrigger value="users" className="data-[state=active]:bg-cyan-600">Users</TabsTrigger>
             <TabsTrigger value="downloads" className="data-[state=active]:bg-cyan-600">Downloads</TabsTrigger>
             <TabsTrigger value="telegram" className="data-[state=active]:bg-cyan-600">Telegram</TabsTrigger>
             <TabsTrigger value="analytics" className="data-[state=active]:bg-cyan-600">Analytics</TabsTrigger>
             <TabsTrigger value="system" className="data-[state=active]:bg-cyan-600">System</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="payments">
+            <Card className="bg-tech-charcoal border-tech-blue/30">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <DollarSign className="w-5 h-5" />
+                  Payment Verification
+                </CardTitle>
+                <CardDescription className="text-gray-400">
+                  Review and verify pending payments and subscriptions
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {dataLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-500"></div>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-gray-400">Transaction ID</TableHead>
+                        <TableHead className="text-gray-400">Plan</TableHead>
+                        <TableHead className="text-gray-400">Amount</TableHead>
+                        <TableHead className="text-gray-400">Method</TableHead>
+                        <TableHead className="text-gray-400">Status</TableHead>
+                        <TableHead className="text-gray-400">Date</TableHead>
+                        <TableHead className="text-gray-400">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {transactions.map((transaction) => (
+                        <TableRow key={transaction.id}>
+                          <TableCell className="text-white font-mono text-xs">
+                            {transaction.tx_id?.substring(0, 12)}...
+                          </TableCell>
+                          <TableCell className="text-white">{transaction.plan_id}</TableCell>
+                          <TableCell className="text-white">${(transaction.price / 100).toFixed(2)}</TableCell>
+                          <TableCell className="text-white">{transaction.payment_method}</TableCell>
+                          <TableCell>{getStatusBadge(transaction.status)}</TableCell>
+                          <TableCell className="text-white">
+                            {new Date(transaction.created_at).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell>
+                            {transaction.status === 'pending' && (
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleApprovePayment(transaction.id)}
+                                  className="bg-green-600 hover:bg-green-700"
+                                >
+                                  <Check className="w-3 h-3 mr-1" />
+                                  Approve
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => handleRejectPayment(transaction.id)}
+                                >
+                                  <X className="w-3 h-3 mr-1" />
+                                  Reject
+                                </Button>
+                              </div>
+                            )}
+                            {transaction.status !== 'pending' && (
+                              <span className="text-gray-400 text-sm">No actions</span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {transactions.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={7} className="text-center text-gray-400 py-8">
+                            No transactions found
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           <TabsContent value="users">
             <Card className="bg-tech-charcoal border-tech-blue/30">
