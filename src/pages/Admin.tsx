@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAdminAuth } from '@/hooks/use-admin-auth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,9 +13,56 @@ import AdminLoginForm from '@/components/auth/AdminLoginForm';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
-const Admin = () => {
+interface Transaction {
+  id: string;
+  tx_id: string;
+  plan_id: string;
+  price: number;
+  payment_method: string;
+  status: string;
+  created_at: string;
+}
+
+interface User {
+  id: number;
+  email: string;
+  subscription: string;
+  status: string;
+  downloads: number;
+  lastLogin: string;
+}
+
+interface Download {
+  id: number;
+  user: string;
+  subscription: string;
+  timestamp: string;
+  file: string;
+  ipAddress: string;
+}
+
+interface CriticalAlert {
+  id: number;
+  type: string;
+  message: string;
+  severity: string;
+  timestamp: string;
+}
+
+interface Stats {
+  totalUsers: number;
+  activeSubscriptions: number;
+  totalRevenue: number;
+  bridgeDownloads: number;
+  telegramConnections: number;
+  criticalIssues: number;
+  monthlyGrowth: number;
+  serverUptime: number;
+}
+
+const Admin: React.FC = () => {
   const { admin, logout, loading: authLoading } = useAdminAuth();
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<Stats>({
     totalUsers: 0,
     activeSubscriptions: 0,
     totalRevenue: 0,
@@ -24,10 +72,10 @@ const Admin = () => {
     monthlyGrowth: 0,
     serverUptime: 0,
   });
-  const [users, setUsers] = useState<any[]>([]);
-  const [downloads, setDownloads] = useState<any[]>([]);
-  const [criticalAlerts, setCriticalAlerts] = useState<any[]>([]);
-  const [transactions, setTransactions] = useState<any[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [downloads, setDownloads] = useState<Download[]>([]);
+  const [criticalAlerts, setCriticalAlerts] = useState<CriticalAlert[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
 
   useEffect(() => {
@@ -39,8 +87,8 @@ const Admin = () => {
   const loadAdminData = async () => {
     setDataLoading(true);
     
-    // Load transactions from Supabase
     try {
+      // Load transactions from Supabase
       const { data: transactionData, error } = await supabase
         .from('transactions')
         .select('*')
@@ -97,7 +145,7 @@ const Admin = () => {
           title: "Payment Approved",
           description: "Transaction has been marked as completed",
         });
-        loadAdminData(); // Refresh data
+        loadAdminData();
       }
     } catch (error) {
       console.error('Error approving payment:', error);
@@ -121,7 +169,7 @@ const Admin = () => {
           title: "Payment Rejected",
           description: "Transaction has been marked as rejected",
         });
-        loadAdminData(); // Refresh data
+        loadAdminData();
       }
     } catch (error) {
       console.error('Error rejecting payment:', error);
