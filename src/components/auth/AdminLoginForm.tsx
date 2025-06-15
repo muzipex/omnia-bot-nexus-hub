@@ -26,21 +26,10 @@ const AdminLoginForm = () => {
     if (success) {
       navigate('/admin');
     } else {
-      setError('Invalid credentials. Please try again.');
+      setError('Invalid credentials or user not authorized as admin.');
     }
     
     setLoading(false);
-  };
-
-  const demoCredentials = [
-    { username: 'admin', password: 'omnia2025' },
-    { username: 'administrator', password: 'admin123' },
-    { username: 'omnia_admin', password: 'omnia2025' }
-  ];
-
-  const fillDemoCredentials = (creds: { username: string; password: string }) => {
-    setUsername(creds.username);
-    setPassword(creds.password);
   };
 
   return (
@@ -67,13 +56,13 @@ const AdminLoginForm = () => {
           
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username" className="text-gray-300">Username</Label>
+              <Label htmlFor="username" className="text-gray-300">Email</Label>
               <div className="relative">
                 <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                 <Input
                   id="username"
-                  type="text"
-                  placeholder="Enter username"
+                  type="email"
+                  placeholder="Enter admin email"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className="pl-10 bg-gray-800/50 border-purple-500/30 text-white placeholder:text-gray-500"
@@ -108,20 +97,11 @@ const AdminLoginForm = () => {
           </form>
 
           <div className="mt-6 pt-4 border-t border-gray-700">
-            <p className="text-sm text-gray-400 mb-3">Demo Credentials:</p>
-            <div className="space-y-2">
-              {demoCredentials.map((creds, index) => (
-                <Button
-                  key={index}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => fillDemoCredentials(creds)}
-                  className="w-full text-xs border-purple-500/30 text-purple-300 hover:bg-purple-500/10"
-                >
-                  {creds.username} / {creds.password}
-                </Button>
-              ))}
-            </div>
+            <p className="text-sm text-gray-400 text-center">
+              Only authorized admin users can access this panel.
+              <br />
+              Contact your system administrator if you need access.
+            </p>
           </div>
         </CardContent>
       </Card>

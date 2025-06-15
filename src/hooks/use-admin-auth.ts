@@ -37,37 +37,6 @@ export const useAdminAuth = () => {
             isAuthenticated: true
           };
           setAdmin(adminUser);
-          
-          // Also store in localStorage for offline access
-          localStorage.setItem('omniabot_admin', JSON.stringify(adminUser));
-        } else {
-          // Fallback to localStorage for compatibility with existing data
-          const storedAdmin = localStorage.getItem('omniabot_admin');
-          if (storedAdmin) {
-            try {
-              const parsedAdmin = JSON.parse(storedAdmin);
-              if (parsedAdmin.isAuthenticated) {
-                setAdmin(parsedAdmin);
-              }
-            } catch (error) {
-              console.error('Failed to parse admin data:', error);
-              localStorage.removeItem('omniabot_admin');
-            }
-          }
-        }
-      } else {
-        // Fallback to localStorage for compatibility with existing data
-        const storedAdmin = localStorage.getItem('omniabot_admin');
-        if (storedAdmin) {
-          try {
-            const parsedAdmin = JSON.parse(storedAdmin);
-            if (parsedAdmin.isAuthenticated) {
-              setAdmin(parsedAdmin);
-            }
-          } catch (error) {
-            console.error('Failed to parse admin data:', error);
-            localStorage.removeItem('omniabot_admin');
-          }
         }
       }
       
@@ -93,17 +62,12 @@ export const useAdminAuth = () => {
               isAuthenticated: true
             };
             setAdmin(adminUser);
-            
-            // Also store in localStorage for offline access
-            localStorage.setItem('omniabot_admin', JSON.stringify(adminUser));
-            
             toast.success("Admin login successful");
           } else {
             toast.error("User is not authorized as admin");
           }
         } else if (event === 'SIGNED_OUT') {
           setAdmin({ username: '', isAuthenticated: false });
-          localStorage.removeItem('omniabot_admin');
         }
       }
     );
@@ -113,12 +77,12 @@ export const useAdminAuth = () => {
     };
   }, []);
 
-  // Admin login function with multiple authentication methods
+  // Admin login function - only Supabase authentication
   const login = async (username: string, password: string) => {
     try {
       setLoading(true);
       
-      // Method 1: Try Supabase authentication first
+      // Use Supabase authentication
       const { data, error } = await supabase.auth.signInWithPassword({
         email: username,
         password: password
@@ -138,7 +102,6 @@ export const useAdminAuth = () => {
             username: data.user.email || username, 
             isAuthenticated: true 
           };
-          localStorage.setItem('omniabot_admin', JSON.stringify(adminUser));
           setAdmin(adminUser);
           toast.success("Admin login successful");
           setLoading(false);
@@ -146,37 +109,10 @@ export const useAdminAuth = () => {
         } else {
           // User is not an admin, sign them out
           await supabase.auth.signOut();
+          toast.error("User is not authorized as admin");
+          setLoading(false);
+          return false;
         }
-      }
-      
-      // Method 2: Fallback to hard-coded credentials for demo compatibility
-      if (username === 'admin' && password === 'omnia2025') {
-        const adminUser = { username, isAuthenticated: true };
-        localStorage.setItem('omniabot_admin', JSON.stringify(adminUser));
-        setAdmin(adminUser);
-        toast.success("Admin login successful");
-        setLoading(false);
-        return true;
-      }
-      
-      // Method 3: Additional admin credentials for flexibility
-      const adminCredentials = [
-        { user: 'administrator', pass: 'admin123' },
-        { user: 'omnia_admin', pass: 'omnia2025' },
-        { user: 'root', pass: 'rootpass' }
-      ];
-      
-      const validCredential = adminCredentials.find(
-        cred => cred.user === username && cred.pass === password
-      );
-      
-      if (validCredential) {
-        const adminUser = { username, isAuthenticated: true };
-        localStorage.setItem('omniabot_admin', JSON.stringify(adminUser));
-        setAdmin(adminUser);
-        toast.success("Admin login successful");
-        setLoading(false);
-        return true;
       }
       
       toast.error("Invalid admin credentials");
@@ -198,7 +134,6 @@ export const useAdminAuth = () => {
       console.error("Logout error:", error);
     }
     
-    localStorage.removeItem('omniabot_admin');
     setAdmin({ username: '', isAuthenticated: false });
     toast.success("Logged out successfully");
   };
