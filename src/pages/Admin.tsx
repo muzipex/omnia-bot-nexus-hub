@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAdminAuth } from '@/hooks/use-admin-auth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -86,14 +85,43 @@ const Admin: React.FC = () => {
 
   const loadAdminData = async () => {
     setDataLoading(true);
-    
+
+    // Fetch live stats from Supabase
+    // 1. Total users
+    const { count: userCount } = await supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true });
+
+    // 2. Active subscriptions
+    // Count where status is 'active', subscription_expires_at is in the future
+    const nowISO = new Date().toISOString();
+    const { count: activeSubscriptions } = await supabase
+      .from('subscriptions')
+      .select('id', {
+        count: 'exact',
+        head: true
+      })
+      .eq('status', 'active')
+      .gt('subscription_expires_at', nowISO);
+
+    // 3. Total revenue: Sum up all completed transactions' price
+    const { data: revenueTransactions, error: revErr } = await supabase
+      .from('transactions')
+      .select('price')
+      .eq('status', 'completed');
+    let totalRevenue = 0;
+    if (!revErr && revenueTransactions) {
+      for (const tx of revenueTransactions) {
+        totalRevenue += Number(tx.price);
+      }
+    }
+
+    // Load transactions as before
     try {
-      // Load transactions from Supabase
       const { data: transactionData, error } = await supabase
         .from('transactions')
         .select('*')
         .order('created_at', { ascending: false });
-      
       if (!error && transactionData) {
         setTransactions(transactionData);
       }
@@ -101,29 +129,30 @@ const Admin: React.FC = () => {
       console.error('Error loading transactions:', error);
     }
 
-    // Mock data for other sections
+    // For bridge downloads, telegram connections, etc – you can implement real queries if/when you store/download that data.
+    // Leaving as zero or as-is for now.
+
     setStats({
-      totalUsers: 2547,
-      activeSubscriptions: 1823,
-      totalRevenue: 45670,
-      bridgeDownloads: 892,
-      telegramConnections: 456,
-      criticalIssues: 3,
-      monthlyGrowth: 12.5,
-      serverUptime: 99.8,
+      totalUsers: userCount ?? 0,
+      activeSubscriptions: activeSubscriptions ?? 0,
+      totalRevenue: totalRevenue ?? 0,
+      bridgeDownloads: 0,
+      telegramConnections: 0,
+      criticalIssues: 0,
+      monthlyGrowth: 0,
+      serverUptime: 0,
     });
 
+    // Leave demo/mock users/downloads for now to keep UI functional (can be refactored further if you have the tables)
     setUsers([
       { id: 1, email: 'user1@example.com', subscription: 'Premium', status: 'Active', downloads: 3, lastLogin: '2024-01-15' },
       { id: 2, email: 'user2@example.com', subscription: 'Basic', status: 'Active', downloads: 1, lastLogin: '2024-01-14' },
       { id: 3, email: 'user3@example.com', subscription: 'Trial', status: 'Expired', downloads: 0, lastLogin: '2024-01-10' },
     ]);
-
     setDownloads([
       { id: 1, user: 'user1@example.com', subscription: 'Premium', timestamp: '2024-01-15 10:30', file: 'mt5_bridge_gui.py', ipAddress: '192.168.1.1' },
       { id: 2, user: 'user2@example.com', subscription: 'Basic', timestamp: '2024-01-14 15:22', file: 'mt5_bridge.py', ipAddress: '192.168.1.2' },
     ]);
-
     setCriticalAlerts([
       { id: 1, type: 'Server', message: 'High CPU usage on Bridge Server #2', severity: 'critical', timestamp: '2024-01-15 11:30' },
       { id: 2, type: 'Security', message: 'Multiple failed login attempts from IP 45.33.22.11', severity: 'warning', timestamp: '2024-01-15 10:45' },
