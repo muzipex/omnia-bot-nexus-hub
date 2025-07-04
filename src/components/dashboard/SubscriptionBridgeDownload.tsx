@@ -19,44 +19,12 @@ const SubscriptionBridgeDownload = () => {
   }, []);
 
   const handleDownload = (bridgeType: 'basic' | 'advanced' | 'enterprise') => {
-    if (!hasValidSubscription) {
-      toast({
-        title: "Subscription Required",
-        description: "Please upgrade your subscription to download the MT5 bridge.",
-        variant: "destructive"
-      });
-      navigate('/pricing');
-      return;
-    }
-
-    // Check subscription level permissions
-    const subscriptionType = subscription?.subscription_type || 'trial';
-    
-    if (bridgeType === 'advanced' && !['premium', 'enterprise'].includes(subscriptionType)) {
-      toast({
-        title: "Premium Subscription Required",
-        description: "Advanced bridge features require Premium or Enterprise subscription.",
-        variant: "destructive"
-      });
-      navigate('/pricing');
-      return;
-    }
-    
-    if (bridgeType === 'enterprise' && subscriptionType !== 'enterprise') {
-      toast({
-        title: "Enterprise Subscription Required",
-        description: "Enterprise bridge features require Enterprise subscription.",
-        variant: "destructive"
-      });
-      navigate('/pricing');
-      return;
-    }
-
+    // Allow all users to download bridge files for connection purposes
     // Log download for admin tracking
     const downloadData = {
       user_id: subscription?.user_id,
       bridge_type: bridgeType,
-      subscription_type: subscriptionType,
+      subscription_type: subscription?.subscription_type || 'trial',
       timestamp: new Date().toISOString()
     };
     
@@ -126,8 +94,8 @@ const SubscriptionBridgeDownload = () => {
   ];
 
   const canDownload = (requiredSubs: string[]) => {
-    if (!hasValidSubscription) return false;
-    return requiredSubs.includes(subscription?.subscription_type || 'trial');
+    // Allow all users to download bridge files for connection purposes
+    return true;
   };
 
   const getSubscriptionBadge = (type: string) => {
@@ -235,30 +203,19 @@ const SubscriptionBridgeDownload = () => {
                     </ul>
                   </div>
                   
-                  <div className="flex items-center justify-between pt-4 border-t border-gray-700">
-                    <div className="text-sm text-gray-400">
-                      {isAllowed ? 'Ready to download' : 'Subscription upgrade required'}
-                    </div>
-                    
-                    {isAllowed ? (
-                      <Button 
-                        onClick={() => handleDownload(bridge.id as 'basic' | 'advanced' | 'enterprise')}
-                        className="bg-tech-blue hover:bg-tech-blue/80"
-                      >
-                        <Download className="w-4 h-4 mr-2" />
-                        Download
-                      </Button>
-                    ) : (
-                      <Button 
-                        onClick={() => navigate('/pricing')}
-                        variant="outline"
-                        className="border-tech-blue/30 text-gray-300 hover:bg-tech-blue/10"
-                      >
-                        <Lock className="w-4 h-4 mr-2" />
-                        Upgrade
-                      </Button>
-                    )}
-                  </div>
+                   <div className="flex items-center justify-between pt-4 border-t border-gray-700">
+                     <div className="text-sm text-gray-400">
+                       Ready to download
+                     </div>
+                     
+                     <Button 
+                       onClick={() => handleDownload(bridge.id as 'basic' | 'advanced' | 'enterprise')}
+                       className="bg-tech-blue hover:bg-tech-blue/80"
+                     >
+                       <Download className="w-4 h-4 mr-2" />
+                       Download
+                     </Button>
+                   </div>
                 </div>
               </CardContent>
             </Card>
