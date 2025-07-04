@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { 
   Activity, 
   Server, 
@@ -17,7 +16,8 @@ import {
   Terminal,
   Cpu,
   Wifi,
-  WifiOff
+  WifiOff,
+  AlertCircle
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
@@ -28,6 +28,7 @@ interface BridgeStatus {
   port: number;
   uptime?: number;
   version?: string;
+  last_check?: string;
 }
 
 const MT5BridgeManager = () => {
@@ -45,9 +46,20 @@ const MT5BridgeManager = () => {
     password: ''
   });
 
+  // Fixed bridge URL
+  const BRIDGE_URL = 'http://127.0.0.1:8000';
+
   const checkBridgeStatus = async () => {
     try {
-      const response = await fetch('http://localhost:8000/status');
+      addLog('🔄 Checking bridge status...');
+      
+      const response = await fetch(`${BRIDGE_URL}/status`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
       if (response.ok) {
         const data = await response.json();
         setBridgeStatus({
@@ -56,15 +68,37 @@ const MT5BridgeManager = () => {
           auto_trading: data.auto_trading_active || false,
           port: 8000,
           uptime: data.uptime,
-          version: data.version
+          version: data.version,
+          last_check: new Date().toLocaleTimeString()
         });
         addLog('✅ Bridge connection successful');
+        
+        if (data.mt5_connected) {
+          addLog('✅ MT5 terminal connected');
+        } else {
+          addLog('⚠️ MT5 terminal not connected');
+        }
+        
+        if (data.auto_trading_active) {
+          addLog('🤖 Auto trading is active');
+        }
       } else {
-        throw new Error('Bridge not responding');
+        throw new Error(`Bridge responded with status ${response.status}`);
       }
     } catch (error) {
-      setBridgeStatus(prev => ({ ...prev, running: false, mt5_connected: false }));
-      addLog('❌ Bridge connection failed - Make sure MT5 Bridge is running');
+      console.error('Bridge status check failed:', error);
+      setBridgeStatus(prev => ({ 
+        ...prev, 
+        running: false, 
+        mt5_connected: false,
+        last_check: new Date().toLocaleTimeString()
+      }));
+      
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        addLog('❌ Cannot connect to bridge - Make sure MT5 Bridge is running on http://127.0.0.1:8000');
+      } else {
+        addLog(`❌ Bridge error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
     }
   };
 
@@ -79,10 +113,10 @@ const MT5BridgeManager = () => {
     }
 
     setLoading(true);
-    addLog('🔄 Connecting to MT5...');
+    addLog(`🔄 Connecting to MT5 server: ${connectionSettings.server}, Account: ${connectionSettings.account}`);
 
     try {
-      const response = await fetch('http://localhost:8000/connect', {
+      const response = await fetch(`${BRIDGE_URL}/connect`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -92,26 +126,35 @@ const MT5BridgeManager = () => {
         })
       });
 
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
       const data = await response.json();
       
-      if (data.success) {
+      if (data.success && data.account_info) {
         setBridgeStatus(prev => ({ ...prev, mt5_connected: true }));
         addLog('✅ MT5 connection successful');
         addLog(`📊 Account: ${data.account_info.name} | Balance: ${data.account_info.currency} ${data.account_info.balance}`);
+        addLog(`🏢 Company: ${data.account_info.company} | Leverage: 1:${data.account_info.leverage}`);
         
         toast({
           title: "Connected to MT5",
           description: `Successfully connected to ${data.account_info.name}`,
           className: "bg-green-500 text-white"
         });
+        
+        // Clear the form for security
+        setConnectionSettings({ server: '', account: '', password: '' });
       } else {
-        throw new Error(data.error || 'Connection failed');
+        throw new Error(data.error || 'Connection failed - no account info received');
       }
     } catch (error) {
-      addLog(`❌ MT5 connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      addLog(`❌ MT5 connection failed: ${errorMessage}`);
       toast({
         title: "Connection Failed",
-        description: error instanceof Error ? error.message : 'Unknown error',
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
@@ -135,17 +178,25 @@ const MT5BridgeManager = () => {
         trading_strategy: 'scalping'
       } : {};
 
-      const response = await fetch(`http://localhost:8000${endpoint}`, {
+      const response = await fetch(`${BRIDGE_URL}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
 
       const data = await response.json();
       
       if (data.success) {
         setBridgeStatus(prev => ({ ...prev, auto_trading: !prev.auto_trading }));
         addLog(`✅ Auto trading ${action === 'start' ? 'started' : 'stopped'}`);
+        
+        if (action === 'start') {
+          addLog(`📊 Trading EURUSD with 0.01 lot size, SL: 50 pips, TP: 100 pips`);
+        }
         
         toast({
           title: `Auto Trading ${action === 'start' ? 'Started' : 'Stopped'}`,
@@ -156,10 +207,11 @@ const MT5BridgeManager = () => {
         throw new Error(data.error || 'Operation failed');
       }
     } catch (error) {
-      addLog(`❌ Auto trading ${action} failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      addLog(`❌ Auto trading ${action} failed: ${errorMessage}`);
       toast({
         title: "Operation Failed",
-        description: error instanceof Error ? error.message : 'Unknown error',
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
@@ -174,9 +226,15 @@ const MT5BridgeManager = () => {
 
   const clearLogs = () => setLogs([]);
 
+  // Enhanced status checking with better error handling
   useEffect(() => {
+    // Initial check
     checkBridgeStatus();
+    
+    // Set up interval for regular checks
     const interval = setInterval(checkBridgeStatus, 5000);
+    
+    // Cleanup
     return () => clearInterval(interval);
   }, []);
 
@@ -195,6 +253,9 @@ const MT5BridgeManager = () => {
               {bridgeStatus.running ? 'ONLINE' : 'OFFLINE'}
             </Badge>
           </CardTitle>
+          {bridgeStatus.last_check && (
+            <p className="text-sm text-gray-400">Last checked: {bridgeStatus.last_check}</p>
+          )}
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Status Grid */}
@@ -211,6 +272,7 @@ const MT5BridgeManager = () => {
               <p className={`font-bold ${bridgeStatus.running ? 'text-green-400' : 'text-red-400'}`}>
                 {bridgeStatus.running ? 'Connected' : 'Disconnected'}
               </p>
+              <p className="text-xs text-gray-500">Port: {bridgeStatus.port}</p>
             </div>
 
             <div className="bg-gray-800/50 rounded-lg p-4 border border-cyan-500/20">
@@ -221,6 +283,9 @@ const MT5BridgeManager = () => {
               <p className={`font-bold ${bridgeStatus.mt5_connected ? 'text-green-400' : 'text-yellow-400'}`}>
                 {bridgeStatus.mt5_connected ? 'Connected' : 'Disconnected'}
               </p>
+              {!bridgeStatus.mt5_connected && (
+                <p className="text-xs text-gray-500">Connect below</p>
+              )}
             </div>
 
             <div className="bg-gray-800/50 rounded-lg p-4 border border-cyan-500/20">
@@ -233,6 +298,25 @@ const MT5BridgeManager = () => {
               </p>
             </div>
           </div>
+
+          {/* Connection Instructions */}
+          {!bridgeStatus.running && (
+            <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <AlertCircle className="w-5 h-5 text-red-400" />
+                <span className="text-red-400 font-semibold">Bridge Not Running</span>
+              </div>
+              <p className="text-gray-300 text-sm mb-2">
+                To connect, please start the MT5 Bridge:
+              </p>
+              <ol className="text-gray-400 text-sm space-y-1 ml-4">
+                <li>1. Open terminal/command prompt</li>
+                <li>2. Navigate to your project folder</li>
+                <li>3. Run: <code className="bg-gray-800 px-2 py-1 rounded">python public/mt5_bridge.py</code></li>
+                <li>4. Ensure MT5 terminal is open with "Allow automated trading" enabled</li>
+              </ol>
+            </div>
+          )}
 
           {/* Connection Form */}
           {bridgeStatus.running && !bridgeStatus.mt5_connected && (
