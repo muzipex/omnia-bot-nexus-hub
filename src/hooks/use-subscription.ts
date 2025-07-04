@@ -91,8 +91,29 @@ export const useSubscription = () => {
     return Math.max(0, diffDays);
   };
 
+  // Set up real-time subscription updates
   useEffect(() => {
     checkSubscription();
+
+    if (!user) return;
+
+    // Set up real-time subscription updates
+    const channel = supabase
+      .channel('subscription-updates')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'subscriptions',
+        filter: `user_id=eq.${user.id}`
+      }, () => {
+        console.log('Subscription updated, refreshing...');
+        checkSubscription();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   return {

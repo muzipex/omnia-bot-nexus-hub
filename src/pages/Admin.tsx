@@ -80,6 +80,36 @@ const Admin: React.FC = () => {
   useEffect(() => {
     if (admin.isAuthenticated) {
       loadAdminData();
+
+      // Set up real-time updates for admin dashboard
+      const subscriptionChannel = supabase
+        .channel('admin-subscription-updates')
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'subscriptions'
+        }, () => {
+          console.log('Admin: Subscription data updated, refreshing...');
+          loadAdminData();
+        })
+        .subscribe();
+
+      const transactionChannel = supabase
+        .channel('admin-transaction-updates')
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'transactions'
+        }, () => {
+          console.log('Admin: Transaction data updated, refreshing...');
+          loadAdminData();
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(subscriptionChannel);
+        supabase.removeChannel(transactionChannel);
+      };
     }
   }, [admin.isAuthenticated]);
 

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,8 +10,13 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 
 const SubscriptionBridgeDownload = () => {
-  const { subscription, hasValidSubscription, getRemainingTrialDays } = useSubscription();
+  const { subscription, hasValidSubscription, getRemainingTrialDays, checkSubscription } = useSubscription();
   const navigate = useNavigate();
+
+  // Refresh subscription status when component mounts
+  useEffect(() => {
+    checkSubscription();
+  }, []);
 
   const handleDownload = (bridgeType: 'basic' | 'advanced' | 'enterprise') => {
     if (!hasValidSubscription) {
