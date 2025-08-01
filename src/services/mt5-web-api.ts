@@ -269,6 +269,50 @@ export class MT5WebApiService {
   isConnected(): boolean {
     return this.sessionId !== null;
   }
+  /**
+   * Generate MT5 Web Terminal URL with pre-filled credentials
+   */
+  generateWebTerminalUrl(server: string, login?: number): string {
+    const baseUrl = 'https://trade.mql5.com/trade';
+    const params = new URLSearchParams();
+    
+    if (server) params.append('servers', server);
+    if (server) params.append('trade_server', server);
+    if (login) params.append('login', login.toString());
+    
+    return `${baseUrl}?${params.toString()}`;
+  }
+
+  /**
+   * Generate deep link for MT5 mobile app
+   */
+  generateMobileDeepLink(server: string, login: number): string {
+    return `mt5://login?server=${encodeURIComponent(server)}&login=${encodeURIComponent(login.toString())}`;
+  }
+
+  /**
+   * Open MT5 Web Terminal in new window
+   */
+  openWebTerminal(server: string, login?: number): void {
+    const url = this.generateWebTerminalUrl(server, login);
+    window.open(url, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+  }
+
+  /**
+   * Attempt to open MT5 mobile app via deep link
+   */
+  openMobileApp(server: string, login: number): void {
+    const deepLink = this.generateMobileDeepLink(server, login);
+    
+    if (navigator.userAgent.includes('Mobile')) {
+      // On mobile, try to open the app directly
+      window.location.href = deepLink;
+    } else {
+      // On desktop, show instructions or fallback
+      console.log(`MT5 Deep Link: ${deepLink}`);
+      alert(`To open MT5 mobile app, use this link on your mobile device:\n${deepLink}`);
+    }
+  }
 }
 
 export const mt5WebApiService = new MT5WebApiService();
