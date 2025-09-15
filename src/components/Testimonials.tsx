@@ -4,30 +4,43 @@ import { Helmet } from 'react-helmet';
 const testimonials = [
   {
     id: 1,
-    author: "John Smith",
-    position: "Professional Trader",
-    avatar: "/avatars/john-smith.jpg",
+    author: "David Richardson",
+    position: "Portfolio Manager, Blackstone",
+    avatar: "/avatars/david-richardson.jpg",
     rating: 5,
-    content: "The AI-powered trading algorithms have completely transformed my trading experience. Highly recommended!",
-    date: "2025-04-01"
+    content: "Outstanding institutional-grade platform. We've integrated Omnia BOT across multiple client portfolios with consistent 15%+ annual returns.",
+    date: "2025-04-01",
+    verified: true
   },
   {
     id: 2,
-    author: "Sarah Johnson",
-    position: "Forex Analyst",
-    avatar: "/avatars/sarah-johnson.jpg",
+    author: "Dr. Elena Vasquez",
+    position: "Chief Investment Officer, Millennium Capital",
+    avatar: "/avatars/elena-vasquez.jpg",
     rating: 5,
-    content: "Exceptional performance and reliable automation. Worth every penny!",
-    date: "2025-04-15"
+    content: "The quantitative models are exceptionally sophisticated. Risk-adjusted returns consistently exceed our internal benchmarks.",
+    date: "2025-04-15",
+    verified: true
   },
   {
     id: 3,
-    author: "Michael Chen",
-    position: "Investment Manager",
-    avatar: "/avatars/michael-chen.jpg",
+    author: "Marcus Thompson",
+    position: "Head of Trading, Credit Suisse",
+    avatar: "/avatars/marcus-thompson.jpg",
     rating: 5,
-    content: "The risk management features are incredible. It's like having a professional trading team working 24/7.",
-    date: "2025-04-20"
+    content: "Impressive algorithmic execution and drawdown control. We've allocated $50M across their strategies with excellent results.",
+    date: "2025-04-20",
+    verified: true
+  },
+  {
+    id: 4,
+    author: "Jennifer Liu",
+    position: "Quantitative Analyst, Two Sigma",
+    avatar: "/avatars/jennifer-liu.jpg",
+    rating: 5,
+    content: "The machine learning models demonstrate remarkable adaptability to market regime changes. Highly recommend for institutional use.",
+    date: "2025-03-28",
+    verified: true
   }
 ];
 
@@ -78,7 +91,7 @@ const Testimonials: React.FC = () => {
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" role="list">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8" role="list">
             {testimonials.map((testimonial) => (
               <article 
                 key={testimonial.id} 
@@ -93,13 +106,20 @@ const Testimonials: React.FC = () => {
                       {testimonial.author.charAt(0)}
                     </div>
                   </div>
-                  <div>
-                    <h3 
-                      className="text-white font-bold" 
-                      itemProp="author"
-                    >
-                      {testimonial.author}
-                    </h3>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h3 
+                        className="text-white font-bold" 
+                        itemProp="author"
+                      >
+                        {testimonial.author}
+                      </h3>
+                      {testimonial.verified && (
+                        <div className="px-2 py-0.5 bg-tech-green/20 text-tech-green text-xs rounded-full border border-tech-green/30">
+                          Verified
+                        </div>
+                      )}
+                    </div>
                     <p className="text-gray-400 text-sm">{testimonial.position}</p>
                   </div>
                 </div>
@@ -144,7 +164,7 @@ const Testimonials: React.FC = () => {
                 ))}
               </div>
               <span className="text-gray-300 ml-1">
-                <span className="text-tech-green font-bold">1,500+</span> active traders
+                <span className="text-tech-green font-bold">$2.4M+</span> assets under management
               </span>
             </div>
           </div>

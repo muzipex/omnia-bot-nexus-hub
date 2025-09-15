@@ -5,6 +5,8 @@ import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import Features from "@/components/Features";
 import Performance from "@/components/Performance";
+import TrustSecurity from "@/components/TrustSecurity";
+import TeamAbout from "@/components/TeamAbout";
 import Testimonials from "@/components/Testimonials";
 import Pricing from "@/components/Pricing";
 import CTA from "@/components/CTA";
@@ -28,6 +30,8 @@ const Index = () => {
         <Hero />
         <Features />
         <Performance />
+        <TrustSecurity />
+        <TeamAbout />
         <Testimonials />
         <Pricing />
         <CTA />
