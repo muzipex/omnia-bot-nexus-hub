@@ -54,6 +54,7 @@ const Navbar: React.FC = () => {
                 <li><a href="#performance" onClick={(e) => handleNavClick(e, 'performance')} className="text-gray-300 hover:text-tech-blue transition-colors">Performance</a></li>
                 <li><a href="#testimonials" onClick={(e) => handleNavClick(e, 'testimonials')} className="text-gray-300 hover:text-tech-blue transition-colors">Testimonials</a></li>
                 <li><a href="#pricing" onClick={(e) => handleNavClick(e, 'pricing')} className="text-gray-300 hover:text-tech-blue transition-colors">Pricing</a></li>
+                <li><a href="https://www.xm.com/referral?token=GdxwBHAY9MtUM85SvanBYQ" target="_blank" rel="noopener noreferrer" className="text-tech-green hover:text-tech-green/80 transition-colors font-medium">Start Trading</a></li>
               </ul>
             </nav>
           </div>
@@ -148,6 +149,17 @@ const Navbar: React.FC = () => {
                     onClick={(e) => handleNavClick(e, 'pricing')}
                   >
                     Pricing
+                  </a>
+                </li>
+                <li>
+                  <a 
+                    href="https://www.xm.com/referral?token=GdxwBHAY9MtUM85SvanBYQ" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="block text-tech-green hover:text-tech-green/80 transition-colors font-medium"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Start Trading
                   </a>
                 </li>
                 {user ? (
