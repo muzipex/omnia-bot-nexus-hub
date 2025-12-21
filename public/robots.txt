@@ -17,3 +17,8 @@ Disallow: /
 
 User-agent: MJ12bot
 Disallow: /
+User-agent: Mediapartners-Google
+Allow: /
+
+User-agent: AdsBot-Google
+Allow: /
