@@ -19,17 +19,26 @@ const SubscriptionBridgeDownload = () => {
   }, []);
 
   const handleDownload = (bridgeType: 'basic' | 'advanced' | 'enterprise') => {
-    // Allow all users to download bridge files for connection purposes
-    // Log download for admin tracking
-    const downloadData = {
-      user_id: subscription?.user_id,
-      bridge_type: bridgeType,
-      subscription_type: subscription?.subscription_type || 'trial',
-      timestamp: new Date().toISOString()
-    };
-    
-    console.log('Bridge download tracked:', downloadData);
-    
+    if (!hasValidSubscription) {
+      toast({
+        title: "Subscription Required",
+        description: "You need an active subscription to download the bridge. Please upgrade your plan.",
+        variant: "destructive"
+      });
+      navigate('/pricing');
+      return;
+    }
+
+    if (!canDownload(bridgeOptions.find(b => b.id === bridgeType)?.requiredSubscription || [])) {
+      toast({
+        title: "Plan Upgrade Required",
+        description: "Your current plan doesn't include this bridge. Please upgrade.",
+        variant: "destructive"
+      });
+      navigate('/pricing');
+      return;
+    }
+
     // Trigger download
     const fileName = bridgeType === 'basic' ? 'mt5_bridge.py' : 'mt5_bridge_gui.py';
     const link = document.createElement('a');
@@ -94,8 +103,8 @@ const SubscriptionBridgeDownload = () => {
   ];
 
   const canDownload = (requiredSubs: string[]) => {
-    // Allow all users to download bridge files for connection purposes
-    return true;
+    if (!hasValidSubscription || !subscription) return false;
+    return requiredSubs.includes(subscription.subscription_type);
   };
 
   const getSubscriptionBadge = (type: string) => {
