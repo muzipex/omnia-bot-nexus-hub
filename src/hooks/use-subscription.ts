@@ -58,23 +58,35 @@ export const useSubscription = () => {
         const now = new Date();
         let isValid = false;
 
-        if (typedSubscription.subscription_type === 'trial' && typedSubscription.status === 'active') {
-          const trialExpires = new Date(typedSubscription.trial_expires_at || '');
-          isValid = now <= trialExpires;
-        } else if (typedSubscription.status === 'active' && typedSubscription.subscription_expires_at) {
-          const subscriptionExpires = new Date(typedSubscription.subscription_expires_at);
-          isValid = now <= subscriptionExpires;
+        if (typedSubscription.status === 'active') {
+          if (typedSubscription.subscription_type === 'trial') {
+            const trialExpires = new Date(typedSubscription.trial_expires_at || '');
+            isValid = trialExpires > now;
+          } else if (typedSubscription.subscription_expires_at) {
+            const subscriptionExpires = new Date(typedSubscription.subscription_expires_at);
+            isValid = subscriptionExpires > now;
+          } else {
+            // Active paid subscription without expiry = valid
+            isValid = true;
+          }
         }
 
         setHasValidSubscription(isValid);
+        
+        // Auto-expire if time is up
+        if (!isValid && typedSubscription.status === 'active') {
+          await supabase
+            .from('subscriptions')
+            .update({ status: 'expired' })
+            .eq('id', typedSubscription.id);
+        }
       } else {
-        // No subscription found - create a default trial subscription
-        setHasValidSubscription(true); // Allow access for now
+        // No subscription found
+        setHasValidSubscription(false);
       }
     } catch (error) {
       console.error('Subscription check error:', error);
-      // On error, allow access
-      setHasValidSubscription(true);
+      setHasValidSubscription(false);
     } finally {
       setLoading(false);
     }
