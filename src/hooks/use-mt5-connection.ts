@@ -64,17 +64,30 @@ export const useMT5Connection = () => {
     try {
       console.log(`Calling MT5 API: ${action}`, payload);
       
-      const url = action === 'check_connection' ? 
-        `${BRIDGE_URL}/status` : 
-        `${BRIDGE_URL}/${action.replace('_', '/')}`;
+      // Map actions to correct bridge endpoints
+      const endpointMap: Record<string, string> = {
+        'check_connection': '/status',
+        'connect': '/connect',
+        'account_info': '/account_info',
+        'positions': '/positions',
+        'place_order': '/place_order',
+        'close_order': '/close_order',
+        'start_auto_trading': '/start_auto_trading',
+        'stop_auto_trading': '/stop_auto_trading',
+      };
+      
+      const endpoint = endpointMap[action] || `/${action}`;
+      const url = `${BRIDGE_URL}${endpoint}`;
+      
+      // Only /status is GET, everything else is POST
+      const isGet = action === 'check_connection';
       
       const response = await fetch(url, {
-        method: action === 'check_connection' || action === 'get_account_info' || action === 'get_positions' ? 'GET' : 'POST',
+        method: isGet ? 'GET' : 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: (action === 'check_connection' || action === 'get_account_info' || action === 'get_positions') ? 
-          undefined : JSON.stringify(payload),
+        body: isGet ? undefined : JSON.stringify(payload),
       });
 
       if (!response.ok) {
