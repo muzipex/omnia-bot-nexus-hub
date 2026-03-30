@@ -214,15 +214,18 @@ const SubscriptionBridgeDownload = () => {
                   
                    <div className="flex items-center justify-between pt-4 border-t border-gray-700">
                      <div className="text-sm text-gray-400">
-                       Ready to download
+                       {isAllowed ? 'Ready to download' : 'Upgrade to unlock'}
                      </div>
                      
                      <Button 
-                       onClick={() => handleDownload(bridge.id as 'basic' | 'advanced' | 'enterprise')}
-                       className="bg-tech-blue hover:bg-tech-blue/80"
+                       onClick={() => isAllowed ? handleDownload(bridge.id as 'basic' | 'advanced' | 'enterprise') : navigate('/pricing')}
+                       className={isAllowed ? "bg-tech-blue hover:bg-tech-blue/80" : "bg-gray-600 hover:bg-gray-500"}
                      >
-                       <Download className="w-4 h-4 mr-2" />
-                       Download
+                       {isAllowed ? (
+                         <><Download className="w-4 h-4 mr-2" /> Download</>
+                       ) : (
+                         <><Lock className="w-4 h-4 mr-2" /> Upgrade</>
+                       )}
                      </Button>
                    </div>
                 </div>
