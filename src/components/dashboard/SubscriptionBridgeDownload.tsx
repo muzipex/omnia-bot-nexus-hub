@@ -19,17 +19,26 @@ const SubscriptionBridgeDownload = () => {
   }, []);
 
   const handleDownload = (bridgeType: 'basic' | 'advanced' | 'enterprise') => {
-    // Allow all users to download bridge files for connection purposes
-    // Log download for admin tracking
-    const downloadData = {
-      user_id: subscription?.user_id,
-      bridge_type: bridgeType,
-      subscription_type: subscription?.subscription_type || 'trial',
-      timestamp: new Date().toISOString()
-    };
-    
-    console.log('Bridge download tracked:', downloadData);
-    
+    if (!hasValidSubscription) {
+      toast({
+        title: "Subscription Required",
+        description: "You need an active subscription to download the bridge. Please upgrade your plan.",
+        variant: "destructive"
+      });
+      navigate('/pricing');
+      return;
+    }
+
+    if (!canDownload(bridgeOptions.find(b => b.id === bridgeType)?.requiredSubscription || [])) {
+      toast({
+        title: "Plan Upgrade Required",
+        description: "Your current plan doesn't include this bridge. Please upgrade.",
+        variant: "destructive"
+      });
+      navigate('/pricing');
+      return;
+    }
+
     // Trigger download
     const fileName = bridgeType === 'basic' ? 'mt5_bridge.py' : 'mt5_bridge_gui.py';
     const link = document.createElement('a');
@@ -94,8 +103,8 @@ const SubscriptionBridgeDownload = () => {
   ];
 
   const canDownload = (requiredSubs: string[]) => {
-    // Allow all users to download bridge files for connection purposes
-    return true;
+    if (!hasValidSubscription || !subscription) return false;
+    return requiredSubs.includes(subscription.subscription_type);
   };
 
   const getSubscriptionBadge = (type: string) => {
@@ -205,15 +214,18 @@ const SubscriptionBridgeDownload = () => {
                   
                    <div className="flex items-center justify-between pt-4 border-t border-gray-700">
                      <div className="text-sm text-gray-400">
-                       Ready to download
+                       {isAllowed ? 'Ready to download' : 'Upgrade to unlock'}
                      </div>
                      
                      <Button 
-                       onClick={() => handleDownload(bridge.id as 'basic' | 'advanced' | 'enterprise')}
-                       className="bg-tech-blue hover:bg-tech-blue/80"
+                       onClick={() => isAllowed ? handleDownload(bridge.id as 'basic' | 'advanced' | 'enterprise') : navigate('/pricing')}
+                       className={isAllowed ? "bg-tech-blue hover:bg-tech-blue/80" : "bg-gray-600 hover:bg-gray-500"}
                      >
-                       <Download className="w-4 h-4 mr-2" />
-                       Download
+                       {isAllowed ? (
+                         <><Download className="w-4 h-4 mr-2" /> Download</>
+                       ) : (
+                         <><Lock className="w-4 h-4 mr-2" /> Upgrade</>
+                       )}
                      </Button>
                    </div>
                 </div>
