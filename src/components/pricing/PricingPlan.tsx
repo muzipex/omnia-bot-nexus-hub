@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { Check, Download, Bitcoin } from 'lucide-react';
+import { Check, Bitcoin } from 'lucide-react';
 
 interface PricingPlanProps {
   plan: {
@@ -16,22 +16,12 @@ interface PricingPlanProps {
   };
   handlePurchase: (plan: any) => void;
   handleCryptoPurchase: (plan: any) => void;
-  handleDownload: () => void;
-  handleUnpaidDownload: () => void;
-  hasPaid: boolean;
-  isVerified: boolean;
-  isLoading: boolean;
 }
 
 const PricingPlan: React.FC<PricingPlanProps> = ({
   plan,
   handlePurchase,
   handleCryptoPurchase,
-  handleDownload,
-  handleUnpaidDownload,
-  hasPaid,
-  isVerified,
-  isLoading
 }) => {
   return (
     <div
@@ -82,16 +72,6 @@ const PricingPlan: React.FC<PricingPlanProps> = ({
           Pay with USDT
         </Button>
       </div>
-      
-      {/* Download button - now properly prevents downloads before payment */}
-      <Button 
-        className="w-full mt-4 bg-tech-blue hover:bg-tech-blue/90 text-white gap-2"
-        onClick={(hasPaid || isVerified) ? handleDownload : handleUnpaidDownload}
-        disabled={isLoading}
-      >
-        <Download className="w-4 h-4" />
-        {isLoading ? "Verifying Payment..." : "Download Software"}
-      </Button>
     </div>
   );
 };
