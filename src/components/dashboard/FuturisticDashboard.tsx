@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { TrendingUp, TrendingDown, DollarSign, Wallet, Activity, Eye, EyeOff, Zap, Shield, Brain, Cpu } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, Wallet, Activity, Eye, EyeOff, Zap, Shield, Brain, Cpu, Download } from 'lucide-react';
 import { useMT5Connection } from '@/hooks/use-mt5-connection';
 
 const FuturisticDashboard = () => {
@@ -334,11 +334,35 @@ const FuturisticDashboard = () => {
               <Shield className="w-12 h-12 text-red-400 mx-auto mb-4" />
               <h3 className="text-xl font-bold text-white mb-2">Connection Required</h3>
               <p className="text-gray-400 mb-4">
-                Connect to your MT5 bridge to access real-time trading data
+                Download and run the MT5 bridge on your trading computer to connect
               </p>
-              <Button className="bg-gradient-to-r from-red-500 to-orange-500 text-white border-0 hover:from-red-600 hover:to-orange-600">
-                Connect Now
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Button 
+                  className="bg-gradient-to-r from-red-500 to-orange-500 text-white border-0 hover:from-red-600 hover:to-orange-600"
+                  onClick={() => {
+                    const link = document.createElement('a');
+                    link.href = '/mt5_bridge_gui.py';
+                    link.download = 'mt5_bridge_gui.py';
+                    link.click();
+                  }}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download Bridge (GUI)
+                </Button>
+                <Button 
+                  variant="outline"
+                  className="border-white/20 text-gray-300 hover:bg-white/10"
+                  onClick={() => {
+                    const link = document.createElement('a');
+                    link.href = '/mt5_bridge.py';
+                    link.download = 'mt5_bridge.py';
+                    link.click();
+                  }}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download Bridge (CLI)
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}
