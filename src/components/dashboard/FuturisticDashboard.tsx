@@ -334,33 +334,20 @@ const FuturisticDashboard = () => {
               <Shield className="w-12 h-12 text-red-400 mx-auto mb-4" />
               <h3 className="text-xl font-bold text-white mb-2">Connection Required</h3>
               <p className="text-gray-400 mb-4">
-                Download and run the MT5 bridge on your trading computer to connect
+                Download and install the OMNIA Scalper EA on your MT5 terminal to start trading
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Button 
                   className="bg-gradient-to-r from-red-500 to-orange-500 text-white border-0 hover:from-red-600 hover:to-orange-600"
                   onClick={() => {
                     const link = document.createElement('a');
-                    link.href = '/mt5_bridge_gui.py';
-                    link.download = 'mt5_bridge_gui.py';
+                    link.href = '/OMNIA_ScalperEA_v1_ultra.ex5';
+                    link.download = 'OMNIA_ScalperEA_v1_ultra.ex5';
                     link.click();
                   }}
                 >
                   <Download className="w-4 h-4 mr-2" />
-                  Download Bridge (GUI)
-                </Button>
-                <Button 
-                  variant="outline"
-                  className="border-white/20 text-gray-300 hover:bg-white/10"
-                  onClick={() => {
-                    const link = document.createElement('a');
-                    link.href = '/mt5_bridge.py';
-                    link.download = 'mt5_bridge.py';
-                    link.click();
-                  }}
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Download Bridge (CLI)
+                  Download OMNIA Scalper EA
                 </Button>
               </div>
             </CardContent>
