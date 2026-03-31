@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { TrendingUp, TrendingDown, DollarSign, Wallet, Activity, Eye, EyeOff, Zap, Shield, Brain, Cpu } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, Wallet, Activity, Eye, EyeOff, Zap, Shield, Brain, Cpu, Download } from 'lucide-react';
 import { useMT5Connection } from '@/hooks/use-mt5-connection';
 
 const FuturisticDashboard = () => {
