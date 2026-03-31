@@ -196,11 +196,6 @@ const Pricing: React.FC = () => {
                 plan={plan}
                 handlePurchase={handlePurchase}
                 handleCryptoPurchase={handleCryptoPurchase}
-                handleDownload={handleDownload}
-                handleUnpaidDownload={handleUnpaidDownload}
-                hasPaid={hasPaid}
-                isVerified={isVerified}
-                isLoading={isLoading}
               />
             ))}
           </div>
