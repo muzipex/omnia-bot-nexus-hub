@@ -151,16 +151,11 @@ const Pricing: React.FC = () => {
               
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {pricingPlans.map((plan, index) => (
-                  <PricingPlan
+              <PricingPlan
                     key={index}
                     plan={plan}
                     handlePurchase={handlePurchase}
                     handleCryptoPurchase={handleCryptoPurchase}
-                    handleDownload={handleDownload}
-                    handleUnpaidDownload={handleUnpaidDownload}
-                    hasPaid={hasPaid}
-                    isVerified={isVerified}
-                    isLoading={isLoading}
                   />
                 ))}
               </div>
